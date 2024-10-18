@@ -39,6 +39,7 @@ public class UserController {
     private String baseUrl;
 
 
+
     @Operation(summary = "카카오 로그인", description = "가입자 라면 로그인 되고, 미가입자 라면 회원가입이 됩니다.")
     @GetMapping("/login")
     public void kakaoLogin(@RequestParam String role ,HttpServletResponse response) throws IOException {
@@ -46,9 +47,9 @@ public class UserController {
                 .append(kakaoLoginUrl)
                 .append("?client_id=").append(kakaoClientId)
                 .append("&redirect_uri=").append(baseUrl).append(kakaoRedirectUri)
-                .append("&response_type=code");
-
-        if(Objects.equals(role, "seller")) loginUrl.append("&state=").append(role);
+                .append("&response_type=code")
+                .append("&state=").append(role);
+        ;
 
         response.sendRedirect(loginUrl.toString());
     }
@@ -62,7 +63,7 @@ public class UserController {
         return ResponseEntity.ok(token);
     }
 
-    @Operation(summary = "카카오 로그아웃" , description = "카카오와 함께 로그아웃 됩니다.")
+    @Operation(summary = "카카오 로그아웃" , description = "로그아웃 됩니다.")
     @GetMapping("/logout")
     public KakaoResponseDto logout(@RequestParam String accessToken) {
         return kakaoService.redirectLogout(accessToken);

@@ -148,16 +148,15 @@ public class KakaoService {
                         .role(UserRoleEnum.SELLER)
                         .kakaoId(kakaoId)
                         .build();
+            } else {
+                kakaoUser = User.builder()
+                        .username(kakaoUserInfo.getNickname())
+                        .password(encodePassword)
+                        .email(email)
+                        .role(UserRoleEnum.USER)
+                        .kakaoId(kakaoId)
+                        .build();
             }
-
-            kakaoUser = User.builder()
-                    .username(kakaoUserInfo.getNickname())
-                    .password(encodePassword)
-                    .email(email)
-                    .role(UserRoleEnum.USER)
-                    .kakaoId(kakaoId)
-                    .build();
-
 
             userRepository.save(kakaoUser);
         }
