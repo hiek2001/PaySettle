@@ -1,6 +1,7 @@
 package org.project.paysystem.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.project.paysystem.dto.UserHistoryResponseDto;
 import org.project.paysystem.dto.VideoControlReqeustDto;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "스트리밍 API", description = "동영상 상태 관리(페이지 이동, 재생 또는 정지, 재생 내역 저장)")
 @RequestMapping("/api/streaming/video")
 public class VideoController {
 
@@ -23,7 +25,7 @@ public class VideoController {
     }
 
     @Operation(summary = "동영상 재생 또는 정지", description = "재생 또는 정지 시, 회원의 재생 상태와 내역 변경")
-    @PostMapping("/{videoId}")
+    @PostMapping("/{videoId}/playback")
     public void videoPlayOrPause(@PathVariable Long videoId, @RequestBody VideoControlReqeustDto reqeustDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
         userVideoHistoryService.updateVideoPlayback(videoId, reqeustDto, userDetails.getUser());
     }

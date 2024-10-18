@@ -32,15 +32,18 @@ public class UserVideoHistoryService {
         // 동영상 조회수 증가
         currentVideo.updateVideoViews();
 
-        // 회원의 동영상 재생 내역 최초 저장
-        UserVideoHistory userVideoHistory = UserVideoHistory.builder()
-                .user(user)
-                .video(currentVideo)
-                .status(VideoStatus.PLAY)
-                .playTime(0L)
-                .build();
+        UserVideoHistory userVideoHistory = userHistoryRepository.findByVideoIdAndUserId(videoId, user.getId());
+        if(userVideoHistory == null || userVideoHistory.getStatus() == VideoStatus.END) {
+            // 회원의 동영상 재생 내역 최초 저장
+             userVideoHistory = UserVideoHistory.builder()
+                    .user(user)
+                    .video(currentVideo)
+                    .status(VideoStatus.PLAY)
+                    .playTime(0L)
+                    .build();
 
-        userHistoryRepository.save(userVideoHistory);
+            userHistoryRepository.save(userVideoHistory);
+        }
 
         return UserHistoryResponseDto.builder()
                 .user(userVideoHistory.getUser())
@@ -50,14 +53,13 @@ public class UserVideoHistoryService {
     }
 
     public void updateVideoPlayback(Long videoId, VideoControlReqeustDto requestDto, User user) {
-        Long userId = user.getId();
-        UserVideoHistory userHistory = userHistoryRepository.findByVideoIdAndUserId(videoId, userId);
+        UserVideoHistory userHistory = userHistoryRepository.findByVideoIdAndUserId(videoId, user.getId());
         if(userHistory == null) {
             throw new UserHistoryNotFoundException("회원이 재생한 내역이 없습니다.");
         }
 
         LocalDateTime currentPausedTime =  LocalDateTime.now();
-        Duration duration = Duration.between(currentPausedTime, LocalDateTime.now());
+        Duration duration = Duration.between(currentPausedTime, requestDto.getPausedTime());
         Long currentPlayTime = duration.toSeconds(); // 초 단위로 변환
 
         // 시청 완료
