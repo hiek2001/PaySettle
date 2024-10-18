@@ -1,0 +1,32 @@
+services:
+  myapp:
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - JWT_SECRET_KEY=${jwt_secret_key}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./build/libs:/app  # 빌드된 JAR 파일을 마운트
+
+
+  db:
+    container_name: mysql-paysystem
+    image: mysql/mysql-server:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: paysystem
+      MYSQL_ROOT_PASSWORD: 1234
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -p1234 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
