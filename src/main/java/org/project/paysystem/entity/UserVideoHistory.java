@@ -2,8 +2,11 @@ package org.project.paysystem.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -27,7 +30,24 @@ public class UserVideoHistory {
     @Enumerated(value = EnumType.STRING)
     private VideoStatus status;
 
-    private Long pausedTime; // 동영상 길이 사용하고, 편리한 계산을 위해 Long 타입 사용
+    private LocalDateTime pausedTime;
 
     private Long playTime;
+
+    @Builder
+    public UserVideoHistory(User user, Video video, VideoStatus status, Long playTime) {
+        this.user = user;
+        this.video = video;
+        this.status = status;
+        this.pausedTime = LocalDateTime.now();
+        this.playTime = playTime;
+    }
+
+    @Builder
+    public UserVideoHistory(VideoStatus status, Long playTime) {
+        this.status = status;
+        this.pausedTime = LocalDateTime.now();
+        this.playTime = this.playTime + playTime;
+    }
+
 }

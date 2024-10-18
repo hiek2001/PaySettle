@@ -19,4 +19,8 @@ public class Video {
     private Long duration; // 동영상 길이
     private Long videViews; // 조회수
     private String videoUrl; // 동영상 URL
+
+    public void updateVideoViews() {
+        this.videViews++;
+    }
 }
