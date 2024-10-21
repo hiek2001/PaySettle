@@ -42,8 +42,10 @@ public class UserVideoHistoryService {
                     .playTime(0L)
                     .build();
 
-            userHistoryRepository.save(userVideoHistory);
+
         }
+
+        userHistoryRepository.save(userVideoHistory);
 
         return UserHistoryResponseDto.builder()
                 .user(userVideoHistory.getUser())

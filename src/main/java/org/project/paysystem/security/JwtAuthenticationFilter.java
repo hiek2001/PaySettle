@@ -21,7 +21,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
-        //setFilterProcessesUrl("/api/users/login");
     }
 
     @Override
@@ -33,13 +32,26 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
             LoginRequestDto requestDto = new ObjectMapper().readValue(request.getInputStream(), LoginRequestDto.class);
 
+            // 소셜 로그인 사용자라서 password 대신 socialId 사용
+            String identifier = requestDto.getSocialId() != null ? String.valueOf(requestDto.getSocialId()) : requestDto.getUsername();
+
             return getAuthenticationManager().authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            requestDto.getUsername(),
-                            requestDto.getPassword(),
+                            identifier,
+                            null, // password 대신 null 또는 토큰 사용
                             null
                     )
             );
+
+//            LoginRequestDto requestDto = new ObjectMapper().readValue(request.getInputStream(), LoginRequestDto.class);
+//
+//            return getAuthenticationManager().authenticate(
+//                    new UsernamePasswordAuthenticationToken(
+//                            requestDto.getUsername(),
+//                            requestDto.getPassword(),
+//                            null
+//                    )
+//            );
         } catch (IOException e) {
             log.error(e.getMessage());
             throw new RuntimeException(e.getMessage());

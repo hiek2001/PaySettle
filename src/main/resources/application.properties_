@@ -21,7 +21,7 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 spring.profiles.include=jwt
 
 # KAKAO
-kakao.api.client-id=79a66932e7c1ad23644610fb9fb0b840
+kakao_api_client_id=79a66932e7c1ad23644610fb9fb0b840
 kakao.api.redirect-uri=/api/users/login/kakao/redirect
 kakao.api.url.login=https://kauth.kakao.com/oauth/authorize
 kakao.api.url.logout=https://kapi.kakao.com/v1/user/logout

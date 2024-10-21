@@ -12,14 +12,14 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "스트리밍 API", description = "동영상 상태 관리(페이지 이동, 재생 또는 정지, 재생 내역 저장)")
+@Tag(name = "스트리밍 API", description = "동영상 상태 관리(동영상 조회, 재생 또는 정지, 재생 내역 저장)")
 @RequestMapping("/api/streaming/video")
 public class VideoController {
 
     private final UserVideoHistoryService userVideoHistoryService;
 
-    @Operation(summary = "동영상 페이지 이동", description = "페이지 접속 시 영상이 자동 재생되며, 회원의 재생 내역을 저장")
-    @PostMapping("/{videoId}")
+    @Operation(summary = "동영상 조회", description = "영상이 자동 재생되며, 회원의 재생 내역을 저장")
+    @GetMapping("/{videoId}")
     public UserHistoryResponseDto goPage(@PathVariable Long videoId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
         return userVideoHistoryService.createHistory(videoId, userDetails.getUser());
     }

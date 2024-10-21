@@ -7,9 +7,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.project.paysystem.dto.KakaoResponseDto;
 import org.project.paysystem.dto.KakaoUserInfoDto;
+import org.project.paysystem.entity.PlatformEnum;
+import org.project.paysystem.entity.SocialUser;
 import org.project.paysystem.entity.User;
 import org.project.paysystem.entity.UserRoleEnum;
 import org.project.paysystem.exception.CCommunicationException;
+import org.project.paysystem.repository.SocialUserRepository;
 import org.project.paysystem.repository.UserRepository;
 import org.project.paysystem.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,12 +33,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class KakaoService {
 
-    private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final RestTemplate restTemplate;
     private final JwtUtil jwtUtil;
+    private final SocialUserRepository socialUserRepository;
 
-    @Value("${kakao.api.client-id}")
+    @Value("${kakao_api_client_id}")
     private String clientId;
 
     @Value("${kakao.api.redirect-uri}")
@@ -123,43 +126,75 @@ public class KakaoService {
         return jsonNode.get("access_token").asText();
     }
 
-
+    // 애초에 여기는 카카오 서비스이기 때문에 카카오만 처리
+    // 다른 소셜은 다른 서비스에서 처리할 예정
     private User registerUserIfNeeded(KakaoUserInfoDto kakaoUserInfo, String role) {
+        User kakaoUser = new User();
+
         // DB에 중복된 Kakao Id가 있는지 확인
         Long kakaoId = kakaoUserInfo.getId();
-        User kakaoUser = userRepository.findByKakaoId(kakaoId).orElse(null); // 없으면 null을 반환
+        SocialUser socialUser = socialUserRepository.findByKakaoId(kakaoId).orElse(null);
+        if(socialUser == null) { // 들어온 값으로 소셜 로그인 가입, 우선 카카오만 있기 때문에 이 기준으로만 가입 시키기
+            // socialUser에 먼저 저장
+            socialUser = SocialUser.builder()
+                    .kakaoId(kakaoId)
+                    .platformType(PlatformEnum.KAKAO)
+                    .build();
 
-        if(kakaoUser == null) {
-            String kakaoEmail = kakaoUserInfo.getEmail();
+            SocialUser newkakaoUser = socialUserRepository.save(socialUser);
 
-            // 신규 회원가입
-            // password : random UUID
-            String password = UUID.randomUUID().toString();
-            String encodePassword = passwordEncoder.encode(password);
-
-            // email : kakao email
+            // 신규 회원 가입
             String email = kakaoUserInfo.getEmail();
 
             if(Objects.equals(role, "seller")) {
-                kakaoUser = User.builder()
-                        .username(kakaoUserInfo.getNickname())
-                        .password(encodePassword)
-                        .email(email)
-                        .role(UserRoleEnum.SELLER)
-                        .kakaoId(kakaoId)
-                        .build();
-            } else {
-                kakaoUser = User.builder()
-                        .username(kakaoUserInfo.getNickname())
-                        .password(encodePassword)
-                        .email(email)
-                        .role(UserRoleEnum.USER)
-                        .kakaoId(kakaoId)
-                        .build();
-            }
-
-            userRepository.save(kakaoUser);
+                    kakaoUser = User.builder()
+                            .username(kakaoUserInfo.getNickname())
+                            .email(email)
+                            .role(UserRoleEnum.SELLER)
+                            .socialUser(newkakaoUser)
+                            .build();
+                } else {
+                    kakaoUser = User.builder()
+                            .username(kakaoUserInfo.getNickname())
+                            .email(email)
+                            .role(UserRoleEnum.USER)
+                            .socialUser(newkakaoUser)
+                            .build();
+                }
         }
+
+        // ***이 부분을 어떻게 로직을 수정할건지 고민해보기***
+//        SocialUser socialUser = socialUserRepository.findByKakaoId(kakaoId).orElse(null); // 이 사이트에 가입되었는지 확인
+//        if(socialUser == null) {
+//            User kakaoUser = userRepository.findByKakaoId(kakaoId).orElse(null); // 카카오로 가입을 했는지 확인
+//
+//            if(kakaoUser == null) {
+//                String kakaoEmail = kakaoUserInfo.getEmail();
+//
+//                // 신규 회원가입
+//                // email : kakao email
+//                String email = kakaoUserInfo.getEmail();
+//
+//                if(Objects.equals(role, "seller")) {
+//                    kakaoUser = User.builder()
+//                            .username(kakaoUserInfo.getNickname())
+//                            .email(email)
+//                            .role(UserRoleEnum.SELLER)
+//                            .kakaoId(kakaoId)
+//                            .build();
+//                } else {
+//                    kakaoUser = User.builder()
+//                            .username(kakaoUserInfo.getNickname())
+//                            .email(email)
+//                            .role(UserRoleEnum.USER)
+//                            .kakaoId(kakaoId)
+//                            .build();
+//                }
+//
+//                userRepository.save(kakaoUser);
+//            }
+     //   }
+
         return kakaoUser;
     }
 

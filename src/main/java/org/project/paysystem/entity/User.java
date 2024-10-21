@@ -19,9 +19,6 @@ public class User {
     @Column(nullable = false, unique = true)
     private String username;
 
-    @Column(nullable = false)
-    private String password;
-
     @Column(nullable = false, unique = true)
     private String email;
 
@@ -29,19 +26,22 @@ public class User {
     @Enumerated(value = EnumType.STRING)
     private UserRoleEnum role;
 
-    private Long kakaoId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="social_id")
+    private SocialUser socialUser;
+
+   // private Long kakaoId;
 
     @Builder
-    public User(String username, String password, UserRoleEnum role, String email, Long kakaoId) {
+    public User(String username, UserRoleEnum role, String email, SocialUser socialUser) {
         this.username = username;
-        this.password = password;
         this.role = role;
-        this.kakaoId = kakaoId;
         this.email = email;
+        this.socialUser = socialUser;
     }
 
-    public User kakaoIdUpdate(Long kakaoId) {
-        this.kakaoId = kakaoId;
-        return this;
-    }
+//    public User kakaoIdUpdate(Long kakaoId) {
+//        this.kakaoId = kakaoId;
+//        return this;
+//    }
 }

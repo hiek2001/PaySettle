@@ -32,7 +32,7 @@ public class UserController {
     @Value("${kakao.api.redirect-uri}")
     private String kakaoRedirectUri;
 
-    @Value("${kakao.api.client-id}")
+    @Value("${kakao_api_client_id}")
     private String kakaoClientId;
 
     @Value("${url.base}")
@@ -41,7 +41,7 @@ public class UserController {
 
 
     @Operation(summary = "카카오 로그인", description = "가입자 라면 로그인 되고, 미가입자 라면 회원가입이 됩니다.")
-    @GetMapping("/login")
+    @GetMapping("/login/kakao")
     public void kakaoLogin(@RequestParam String role ,HttpServletResponse response) throws IOException {
         StringBuilder loginUrl = new StringBuilder()
                 .append(kakaoLoginUrl)
@@ -64,7 +64,7 @@ public class UserController {
     }
 
     @Operation(summary = "카카오 로그아웃" , description = "로그아웃 됩니다.")
-    @GetMapping("/logout")
+    @GetMapping("/logout/kakao")
     public KakaoResponseDto logout(@RequestParam String accessToken) {
         return kakaoService.redirectLogout(accessToken);
     }
