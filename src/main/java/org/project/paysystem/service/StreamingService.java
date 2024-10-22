@@ -5,15 +5,18 @@ import org.project.paysystem.dto.UserHistoryResponseDto;
 import org.project.paysystem.dto.VideoControlReqeustDto;
 import org.project.paysystem.entity.*;
 import org.project.paysystem.exception.UserHistoryNotFoundException;
+import org.project.paysystem.exception.VideoNotFoundException;
 import org.project.paysystem.repository.AdsRepository;
 import org.project.paysystem.repository.UserVideoHistoryRepository;
 import org.project.paysystem.repository.VideoAdHistoryRepository;
 import org.project.paysystem.repository.VideoRepository;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.webjars.NotFoundException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -24,9 +27,16 @@ public class StreamingService {
     private final AdsRepository adsRepository;
     private final VideoAdHistoryRepository videoAdHistoryRepository;
 
+    private final MessageSource messageSource;
+
     public UserHistoryResponseDto createUserVideoHistory(Long videoId, User user) {
         Video currentVideo = videoRepository.findById(videoId).orElseThrow(() ->
-                new NullPointerException("해당 동영상이 없습니다.")
+                new VideoNotFoundException(messageSource.getMessage(
+                        "not.found.video",
+                        null,
+                        "Not Found Video "+videoId,
+                        Locale.getDefault()
+                ))
         );
 
         // 동영상 조회수 증가
@@ -54,12 +64,22 @@ public class StreamingService {
 
     public void updateVideoPlayback(Long videoId, VideoControlReqeustDto requestDto, User user) {
         Video currentVideo = videoRepository.findById(videoId).orElseThrow(() ->
-                new NullPointerException("해당 동영상이 없습니다.")
+                new VideoNotFoundException(messageSource.getMessage(
+                        "not.found.video",
+                        null,
+                        "Not Found Video "+videoId,
+                        Locale.getDefault()
+                ))
         );
 
         UserVideoHistory userHistory = userHistoryRepository.findByVideoIdAndUserId(videoId, user.getId());
         if(userHistory == null) {
-            throw new UserHistoryNotFoundException("회원이 재생한 내역이 없습니다.");
+            throw new UserHistoryNotFoundException(messageSource.getMessage(
+                    "not.found.userHistory",
+                    null,
+                    "Not Found User History "+videoId+" , "+user.getId(),
+                    Locale.getDefault()
+            ));
         }
 
         LocalDateTime currentPausedTime =  LocalDateTime.now();
@@ -92,7 +112,12 @@ public class StreamingService {
 
     public void createVideoAdHistory(Long videoId) {
         Video video = videoRepository.findById(videoId).orElseThrow(() ->
-                new NullPointerException("해당 동영상이 없습니다.")
+                new VideoNotFoundException(messageSource.getMessage(
+                        "not.found.video",
+                        null,
+                        "Not Found Video "+videoId,
+                        Locale.getDefault()
+                ))
         );
 
         // 동영상에 삽입할 광고 1개 랜덤으로 가져오기(실시간성 보장)

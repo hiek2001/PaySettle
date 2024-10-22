@@ -11,24 +11,22 @@ import org.project.paysystem.entity.PlatformEnum;
 import org.project.paysystem.entity.SocialUser;
 import org.project.paysystem.entity.User;
 import org.project.paysystem.entity.UserRoleEnum;
-import org.project.paysystem.exception.CCommunicationException;
+import org.project.paysystem.exception.KakaoApiException;
 import org.project.paysystem.repository.SocialUserRepository;
 import org.project.paysystem.repository.UserRepository;
 import org.project.paysystem.security.UserDetailsImpl;
 import org.project.paysystem.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.http.*;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.Locale;
 import java.util.Objects;
-import java.util.UUID;
 
 @Slf4j(topic = "KAKAO LOGIN")
 @Service
@@ -58,14 +56,15 @@ public class KakaoService {
     @Value("${kakao.api.url.logout}")
     private String kakaoLogoutUrl;
 
+    private final MessageSource messageSource;
+
 
     public String redirectLogin(String code, String role) throws JsonProcessingException {
         String accessToken = getToken(code);
         KakaoUserInfoDto kakaoUserInfo = getUserInfo(accessToken);
         User kakaoUser = registerUserIfNeeded(kakaoUserInfo, role);
-
         UserDetailsImpl userDetails = new UserDetailsImpl(kakaoUser);
-        log.info("email : "+userDetails.getUsername());
+
         return jwtUtil.createToken(userDetails.getUsername(), userDetails.getUser().getRole()); // 메소드명은 username이지만 실제로는 email을 반환
     }
 
@@ -75,7 +74,14 @@ public class KakaoService {
         headers.set("Authorization", "Bearer " + accessToken);
         log.info("accessToken : "+accessToken);
 
-        if (profileUrl == null) throw new CCommunicationException("Kakao profile URL is not configured");
+        if(profileUrl == null) {
+            throw new KakaoApiException(messageSource.getMessage(
+                    "redirect.uri.mismatch",
+                    null,
+                    "Redirect Url Mismatch",
+                    Locale.getDefault()
+            ));
+        }
         URI uri = URI.create(profileUrl);
 
         RequestEntity<MultiValueMap<String, String>> requestEntity = RequestEntity
@@ -103,7 +109,12 @@ public class KakaoService {
     private String getToken(String code) throws JsonProcessingException {
         log.info("인가코드 : "+code);
 
-        if (tokenUrl == null) throw new CCommunicationException("Kakao token URL is not configured");
+        if (tokenUrl == null) throw new KakaoApiException(messageSource.getMessage(
+                "redirect.uri.mismatch",
+                null,
+                "Redirect Url Mismatch",
+                Locale.getDefault()
+        ));
         URI requestUri = URI.create(tokenUrl);
 
         // HTTP Header 설정
@@ -175,7 +186,12 @@ public class KakaoService {
     }
 
     public KakaoResponseDto redirectLogout(String accessToken) {
-        if (kakaoLogoutUrl == null) throw new CCommunicationException("Kakao logout URL is not configured");
+        if (kakaoLogoutUrl == null) throw new KakaoApiException(messageSource.getMessage(
+                "redirect.uri.mismatch",
+                null,
+                "Redirect Url Mismatch",
+                Locale.getDefault()
+        ));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);

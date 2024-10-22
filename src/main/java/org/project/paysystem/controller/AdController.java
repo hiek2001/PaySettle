@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "광고 API", description = "광고 관리(광고 삽입)")
-@RequestMapping("/api/streaming/ad")
+@RequestMapping("/api/streaming/ads")
 public class AdController {
 
     private final StreamingService streamingService;
