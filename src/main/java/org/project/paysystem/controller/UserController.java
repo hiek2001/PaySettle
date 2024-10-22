@@ -2,22 +2,24 @@ package org.project.paysystem.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.project.paysystem.dto.KakaoResponseDto;
-import org.project.paysystem.dto.LoginRequestDto;
+import lombok.extern.slf4j.Slf4j;
+import org.project.paysystem.dto.KakaoLoginResponseDto;
+import org.project.paysystem.dto.KakaoLogoutResponseDto;
+import org.project.paysystem.dto.UserHistoryResponseDto;
+import org.project.paysystem.exception.RestApiException;
 import org.project.paysystem.service.KakaoService;
-import org.project.paysystem.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.Objects;
 
+@Slf4j()
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "회원 API", description = "카카오 회원가입, 로그인, 로그아웃")
@@ -55,18 +57,22 @@ public class UserController {
     }
 
 
-    @Operation(summary = "카카오 로그인 Redirect URL")
+    @Operation(summary = "카카오 로그인 Redirect URL", responses = {
+            @ApiResponse(responseCode = "200", description = "로그인 및 회원가입 성공", content = @Content(schema = @Schema(implementation = KakaoLoginResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "존재하지 않는 리소스 접근", content = @Content(schema = @Schema(implementation = RestApiException.class)))
+    })
     @GetMapping("/login/kakao/redirect")
-    public ResponseEntity redirectKakaoLogin(@RequestParam String code, @RequestParam String state) throws JsonProcessingException {
-        String token = kakaoService.redirectLogin(code, state);
-
-        return ResponseEntity.ok(token);
+    public KakaoLoginResponseDto redirectKakaoLogin(@RequestParam String code, @RequestParam String state) throws JsonProcessingException {
+        return kakaoService.redirectLogin(code, state);
     }
 
-    @Operation(summary = "카카오 로그아웃" , description = "로그아웃 됩니다.")
+    @Operation(summary = "카카오 로그아웃" , description = "로그아웃 됩니다.", responses = {
+            @ApiResponse(responseCode = "200", description = "로그아웃 성공", content = @Content(schema = @Schema(implementation = KakaoLogoutResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "존재하지 않는 리소스 접근", content = @Content(schema = @Schema(implementation = RestApiException.class)))
+    })
     @GetMapping("/logout/kakao")
-    public KakaoResponseDto logout(@RequestParam String accessToken) {
-        return kakaoService.redirectLogout(accessToken);
+    public KakaoLogoutResponseDto logout(@RequestParam("kakaoToken") String kakaoToken) {
+        return kakaoService.redirectLogout(kakaoToken);
     }
 
 }
