@@ -33,7 +33,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
             LoginRequestDto requestDto = new ObjectMapper().readValue(request.getInputStream(), LoginRequestDto.class);
 
             // 소셜 로그인 사용자라서 password 대신 socialId 사용
-            String identifier = requestDto.getSocialId() != null ? String.valueOf(requestDto.getSocialId()) : requestDto.getUsername();
+            String identifier = requestDto.getSocialId() != null ? String.valueOf(requestDto.getSocialId()) : requestDto.getEmail();
 
             return getAuthenticationManager().authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -43,15 +43,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                     )
             );
 
-//            LoginRequestDto requestDto = new ObjectMapper().readValue(request.getInputStream(), LoginRequestDto.class);
-//
-//            return getAuthenticationManager().authenticate(
-//                    new UsernamePasswordAuthenticationToken(
-//                            requestDto.getUsername(),
-//                            requestDto.getPassword(),
-//                            null
-//                    )
-//            );
         } catch (IOException e) {
             log.error(e.getMessage());
             throw new RuntimeException(e.getMessage());
@@ -60,10 +51,10 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) {
-        String username = ((UserDetailsImpl) authResult.getPrincipal()).getUsername();
+        String email = ((UserDetailsImpl) authResult.getPrincipal()).getUsername();
         UserRoleEnum role = ((UserDetailsImpl) authResult.getPrincipal()).getUser().getRole();
 
-        String token = jwtUtil.createToken(username, role);
+        String token = jwtUtil.createToken(email, role);
         response.addHeader(JwtUtil.AUTHORIZATION_HEADER, token);
     }
 

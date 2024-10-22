@@ -30,8 +30,6 @@ public class User {
     @JoinColumn(name="social_id")
     private SocialUser socialUser;
 
-   // private Long kakaoId;
-
     @Builder
     public User(String username, UserRoleEnum role, String email, SocialUser socialUser) {
         this.username = username;
@@ -40,8 +38,4 @@ public class User {
         this.socialUser = socialUser;
     }
 
-//    public User kakaoIdUpdate(Long kakaoId) {
-//        this.kakaoId = kakaoId;
-//        return this;
-//    }
 }

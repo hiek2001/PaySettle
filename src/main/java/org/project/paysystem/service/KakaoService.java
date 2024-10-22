@@ -14,9 +14,11 @@ import org.project.paysystem.entity.UserRoleEnum;
 import org.project.paysystem.exception.CCommunicationException;
 import org.project.paysystem.repository.SocialUserRepository;
 import org.project.paysystem.repository.UserRepository;
+import org.project.paysystem.security.UserDetailsImpl;
 import org.project.paysystem.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -62,7 +64,9 @@ public class KakaoService {
         KakaoUserInfoDto kakaoUserInfo = getUserInfo(accessToken);
         User kakaoUser = registerUserIfNeeded(kakaoUserInfo, role);
 
-        return jwtUtil.createToken(kakaoUser.getUsername(), kakaoUser.getRole()); // token 반환
+        UserDetailsImpl userDetails = new UserDetailsImpl(kakaoUser);
+        log.info("email : "+userDetails.getUsername());
+        return jwtUtil.createToken(userDetails.getUsername(), userDetails.getUser().getRole()); // 메소드명은 username이지만 실제로는 email을 반환
     }
 
     private KakaoUserInfoDto getUserInfo(String accessToken) throws JsonProcessingException {
@@ -141,7 +145,7 @@ public class KakaoService {
                     .platformType(PlatformEnum.KAKAO)
                     .build();
 
-            SocialUser newkakaoUser = socialUserRepository.save(socialUser);
+            socialUserRepository.save(socialUser);
 
             // 신규 회원 가입
             String email = kakaoUserInfo.getEmail();
@@ -151,57 +155,27 @@ public class KakaoService {
                             .username(kakaoUserInfo.getNickname())
                             .email(email)
                             .role(UserRoleEnum.SELLER)
-                            .socialUser(newkakaoUser)
+                            .socialUser(socialUser)
                             .build();
                 } else {
                     kakaoUser = User.builder()
                             .username(kakaoUserInfo.getNickname())
                             .email(email)
                             .role(UserRoleEnum.USER)
-                            .socialUser(newkakaoUser)
+                            .socialUser(socialUser)
                             .build();
                 }
+
+            userRepository.save(kakaoUser);
         }
 
-        // ***이 부분을 어떻게 로직을 수정할건지 고민해보기***
-//        SocialUser socialUser = socialUserRepository.findByKakaoId(kakaoId).orElse(null); // 이 사이트에 가입되었는지 확인
-//        if(socialUser == null) {
-//            User kakaoUser = userRepository.findByKakaoId(kakaoId).orElse(null); // 카카오로 가입을 했는지 확인
-//
-//            if(kakaoUser == null) {
-//                String kakaoEmail = kakaoUserInfo.getEmail();
-//
-//                // 신규 회원가입
-//                // email : kakao email
-//                String email = kakaoUserInfo.getEmail();
-//
-//                if(Objects.equals(role, "seller")) {
-//                    kakaoUser = User.builder()
-//                            .username(kakaoUserInfo.getNickname())
-//                            .email(email)
-//                            .role(UserRoleEnum.SELLER)
-//                            .kakaoId(kakaoId)
-//                            .build();
-//                } else {
-//                    kakaoUser = User.builder()
-//                            .username(kakaoUserInfo.getNickname())
-//                            .email(email)
-//                            .role(UserRoleEnum.USER)
-//                            .kakaoId(kakaoId)
-//                            .build();
-//                }
-//
-//                userRepository.save(kakaoUser);
-//            }
-     //   }
+       kakaoUser = userRepository.findBySocialUser(socialUser.getId());
 
         return kakaoUser;
     }
 
     public KakaoResponseDto redirectLogout(String accessToken) {
         if (kakaoLogoutUrl == null) throw new CCommunicationException("Kakao logout URL is not configured");
-
-       // jwtUtil.validateToken(accessToken);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
