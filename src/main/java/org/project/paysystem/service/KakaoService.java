@@ -5,7 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.project.paysystem.dto.KakaoResponseDto;
+import org.project.paysystem.dto.KakaoLoginResponseDto;
+import org.project.paysystem.dto.KakaoLogoutResponseDto;
 import org.project.paysystem.dto.KakaoUserInfoDto;
 import org.project.paysystem.entity.PlatformEnum;
 import org.project.paysystem.entity.SocialUser;
@@ -59,13 +60,22 @@ public class KakaoService {
     private final MessageSource messageSource;
 
 
-    public String redirectLogin(String code, String role) throws JsonProcessingException {
+    public KakaoLoginResponseDto redirectLogin(String code, String role) throws JsonProcessingException {
         String accessToken = getToken(code);
         KakaoUserInfoDto kakaoUserInfo = getUserInfo(accessToken);
         User kakaoUser = registerUserIfNeeded(kakaoUserInfo, role);
         UserDetailsImpl userDetails = new UserDetailsImpl(kakaoUser);
 
-        return jwtUtil.createToken(userDetails.getUsername(), userDetails.getUser().getRole()); // 메소드명은 username이지만 실제로는 email을 반환
+        String token = jwtUtil.createToken(userDetails.getUsername(), userDetails.getUser().getRole()); // 메소드명은 username이지만 실제로는 email을 반환
+
+        return KakaoLoginResponseDto.builder()
+                .status(HttpStatus.OK)
+                .message("Kakao Login Success")
+                .email(userDetails.getUsername())
+                .role(userDetails.getUser().getRole())
+                .kakaoToken(accessToken)
+                .token(token)
+                .build();
     }
 
     private KakaoUserInfoDto getUserInfo(String accessToken) throws JsonProcessingException {
@@ -185,7 +195,7 @@ public class KakaoService {
         return kakaoUser;
     }
 
-    public KakaoResponseDto redirectLogout(String accessToken) {
+    public KakaoLogoutResponseDto redirectLogout(String kakaoToken) {
         if (kakaoLogoutUrl == null) throw new KakaoApiException(messageSource.getMessage(
                 "redirect.uri.mismatch",
                 null,
@@ -195,14 +205,15 @@ public class KakaoService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        headers.set("Authorization", "Bearer " + accessToken);
+        headers.set("Authorization", "Bearer " + kakaoToken);
 
         HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(headers);
         ResponseEntity<String> response = restTemplate.postForEntity(kakaoLogoutUrl, requestEntity, String.class);
 
-        return KakaoResponseDto.builder()
-                .status(response.getStatusCode())
-                .message(response.getBody())
+        return KakaoLogoutResponseDto.builder()
+                .status(HttpStatus.OK)
+                .message("Kakao Logout Success")
+                .data(response.getBody())
                 .build();
     }
 }

@@ -12,7 +12,6 @@ import org.project.paysystem.repository.VideoAdHistoryRepository;
 import org.project.paysystem.repository.VideoRepository;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
-import org.webjars.NotFoundException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -62,7 +61,7 @@ public class StreamingService {
                 .build();
     }
 
-    public void updateVideoPlayback(Long videoId, VideoControlReqeustDto requestDto, User user) {
+    public UserHistoryResponseDto updateVideoPlayback(Long videoId, VideoControlReqeustDto requestDto, User user) {
         Video currentVideo = videoRepository.findById(videoId).orElseThrow(() ->
                 new VideoNotFoundException(messageSource.getMessage(
                         "not.found.video",
@@ -108,6 +107,12 @@ public class StreamingService {
         }
 
         userHistoryRepository.save(userHistory);
+
+        return UserHistoryResponseDto.builder()
+                .user(userHistory.getUser())
+                .video(userHistory.getVideo())
+                .status(userHistory.getStatus())
+                .build();
     }
 
     public void createVideoAdHistory(Long videoId) {
