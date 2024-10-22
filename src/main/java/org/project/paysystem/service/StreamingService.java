@@ -3,29 +3,29 @@ package org.project.paysystem.service;
 import lombok.RequiredArgsConstructor;
 import org.project.paysystem.dto.UserHistoryResponseDto;
 import org.project.paysystem.dto.VideoControlReqeustDto;
-import org.project.paysystem.entity.User;
-import org.project.paysystem.entity.UserVideoHistory;
-import org.project.paysystem.entity.Video;
-import org.project.paysystem.entity.VideoStatus;
+import org.project.paysystem.entity.*;
 import org.project.paysystem.exception.UserHistoryNotFoundException;
+import org.project.paysystem.repository.AdsRepository;
 import org.project.paysystem.repository.UserVideoHistoryRepository;
+import org.project.paysystem.repository.VideoAdHistoryRepository;
 import org.project.paysystem.repository.VideoRepository;
 import org.springframework.stereotype.Service;
+import org.webjars.NotFoundException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class UserVideoHistoryService {
+public class StreamingService {
 
     private final VideoRepository videoRepository;
     private final UserVideoHistoryRepository userHistoryRepository;
+    private final AdsRepository adsRepository;
+    private final VideoAdHistoryRepository videoAdHistoryRepository;
 
-    private Video currentVideo;
-
-    public UserHistoryResponseDto createHistory(Long videoId, User user) {
-        currentVideo = videoRepository.findById(videoId).orElseThrow(() ->
+    public UserHistoryResponseDto createUserVideoHistory(Long videoId, User user) {
+        Video currentVideo = videoRepository.findById(videoId).orElseThrow(() ->
                 new NullPointerException("해당 동영상이 없습니다.")
         );
 
@@ -35,14 +35,12 @@ public class UserVideoHistoryService {
         UserVideoHistory userVideoHistory = userHistoryRepository.findByVideoIdAndUserId(videoId, user.getId());
         if(userVideoHistory == null || userVideoHistory.getStatus() == VideoStatus.END) {
             // 회원의 동영상 재생 내역 최초 저장
-             userVideoHistory = UserVideoHistory.builder()
+            userVideoHistory = UserVideoHistory.builder()
                     .user(user)
                     .video(currentVideo)
                     .status(VideoStatus.PLAY)
                     .playTime(0L)
                     .build();
-
-
         }
 
         userHistoryRepository.save(userVideoHistory);
@@ -55,6 +53,10 @@ public class UserVideoHistoryService {
     }
 
     public void updateVideoPlayback(Long videoId, VideoControlReqeustDto requestDto, User user) {
+        Video currentVideo = videoRepository.findById(videoId).orElseThrow(() ->
+                new NullPointerException("해당 동영상이 없습니다.")
+        );
+
         UserVideoHistory userHistory = userHistoryRepository.findByVideoIdAndUserId(videoId, user.getId());
         if(userHistory == null) {
             throw new UserHistoryNotFoundException("회원이 재생한 내역이 없습니다.");
@@ -86,5 +88,22 @@ public class UserVideoHistoryService {
         }
 
         userHistoryRepository.save(userHistory);
+    }
+
+    public void createVideoAdHistory(Long videoId) {
+        Video video = videoRepository.findById(videoId).orElseThrow(() ->
+                new NullPointerException("해당 동영상이 없습니다.")
+        );
+
+        // 동영상에 삽입할 광고 1개 랜덤으로 가져오기(실시간성 보장)
+        Ads insertAd = adsRepository.findRandomAdByHash();
+
+        // 해당 동영상에 광고 연결하여 저장
+        VideoAdHistory newVideoAdHistory = VideoAdHistory.builder()
+                .video(video)
+                .ads(insertAd)
+                .build();
+
+        videoAdHistoryRepository.save(newVideoAdHistory);
     }
 }

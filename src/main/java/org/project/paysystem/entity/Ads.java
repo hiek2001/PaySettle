@@ -17,7 +17,6 @@ public class Ads {
     private Long id;
 
     private Long adsId; // 동영상에 삽입된 광고 ID
-    private Long adsViews; // 광고 조회수
-    private Long watchedTime; // 광고가 삽입된 지점
+//    private Long adsViews; // 광고 조회수
     private String adsUrl; // 광고 URL
 }
