@@ -30,24 +30,66 @@ public class UserVideoHistory {
     @Enumerated(value = EnumType.STRING)
     private VideoStatus status;
 
-    private LocalDateTime pausedTime;
+    private long pausedTime;
 
-    private Long playTime;
+    private long watchTime;
 
-    @Builder
-    public UserVideoHistory(User user, Video video, VideoStatus status, Long playTime) {
+    // setter
+    public void updateVideoStatus(VideoStatus status) {
+        this.status = status;
+    }
+
+    public void updateVideoHistory(VideoStatus videoStatus, long watchTime, long pausedTime) {
+        this.status = videoStatus;
+        this.watchTime = this.watchTime + watchTime;
+        this.pausedTime = pausedTime;
+    }
+
+    // builder
+    public static UserVideoHistoryBuilder builder() {
+        return new UserVideoHistoryBuilder();
+    }
+
+    public static class UserVideoHistoryBuilder {
+        private User user;
+        private Video video;
+        private VideoStatus status;
+        private long pausedTime;
+        private long watchTime;
+
+        public UserVideoHistoryBuilder user(User user) {
+            this.user = user;
+            return this;
+        }
+
+        public UserVideoHistoryBuilder video(Video video) {
+            this.video = video;
+            return this;
+        }
+        public UserVideoHistoryBuilder status(VideoStatus status) {
+            this.status = status;
+            return this;
+        }
+        public UserVideoHistoryBuilder pausedTime(long pausedTime) {
+            this.pausedTime = pausedTime;
+            return this;
+        }
+        public UserVideoHistoryBuilder watchTime(long watchTime) {
+            this.watchTime = watchTime;
+            return this;
+        }
+        public UserVideoHistory buildForFullData() {
+            return new UserVideoHistory(user, video, status, pausedTime, watchTime);
+        }
+    }
+
+
+    private UserVideoHistory(User user, Video video, VideoStatus status, long watchTime, long pausedTime) {
         this.user = user;
         this.video = video;
         this.status = status;
-        this.pausedTime = LocalDateTime.now();
-        this.playTime = playTime;
-    }
-
-    @Builder
-    public UserVideoHistory(VideoStatus status, Long playTime) {
-        this.status = status;
-        this.pausedTime = LocalDateTime.now();
-        this.playTime = this.playTime + playTime;
+        this.pausedTime = pausedTime;
+        this.watchTime = watchTime;
     }
 
 }

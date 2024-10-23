@@ -2,6 +2,7 @@ package org.project.paysystem.service;
 
 import lombok.RequiredArgsConstructor;
 import org.project.paysystem.dto.UserHistoryResponseDto;
+import org.project.paysystem.dto.UserResponseDto;
 import org.project.paysystem.dto.VideoControlReqeustDto;
 import org.project.paysystem.entity.*;
 import org.project.paysystem.exception.UserHistoryNotFoundException;
@@ -13,9 +14,8 @@ import org.project.paysystem.repository.VideoRepository;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Locale;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +26,7 @@ public class StreamingService {
     private final AdsRepository adsRepository;
     private final VideoAdHistoryRepository videoAdHistoryRepository;
 
+    private final UserVideoHistoryService userVideoHistoryService;
     private final MessageSource messageSource;
 
     public UserHistoryResponseDto createUserVideoHistory(Long videoId, User user) {
@@ -42,20 +43,29 @@ public class StreamingService {
         currentVideo.updateVideoViews();
 
         UserVideoHistory userVideoHistory = userHistoryRepository.findByVideoIdAndUserId(videoId, user.getId());
-        if(userVideoHistory == null || userVideoHistory.getStatus() == VideoStatus.END) {
-            // 회원의 동영상 재생 내역 최초 저장
+
+        // 회원의 동영상 재생 내역 최초 저장
+        if(userVideoHistory == null) {
             userVideoHistory = UserVideoHistory.builder()
                     .user(user)
                     .video(currentVideo)
                     .status(VideoStatus.PLAY)
-                    .playTime(0L)
-                    .build();
+                    .watchTime(0L)
+                    .buildForFullData();
+
+            userHistoryRepository.save(userVideoHistory);
         }
 
-        userHistoryRepository.save(userVideoHistory);
+        // 재생 내역이 있기 때문에, watchTime은 그대로
+        // 동영상 상태만 변경
+        if(userVideoHistory.getStatus() == VideoStatus.END) {
+            userVideoHistoryService.updateVideoStatus(userVideoHistory, VideoStatus.PLAY);
+        }
+
+        UserResponseDto userResponseDto = new UserResponseDto(userVideoHistory.getUser());
 
         return UserHistoryResponseDto.builder()
-                .user(userVideoHistory.getUser())
+                .user(userResponseDto)
                 .video(userVideoHistory.getVideo())
                 .status(userVideoHistory.getStatus())
                 .build();
@@ -81,35 +91,23 @@ public class StreamingService {
             ));
         }
 
-        LocalDateTime currentPausedTime =  LocalDateTime.now();
-        Duration duration = Duration.between(currentPausedTime, requestDto.getPausedTime());
-        Long currentPlayTime = duration.toSeconds(); // 초 단위로 변환
-
         // 시청 완료
-        if(currentVideo.getDuration() < currentPlayTime) {
-            UserVideoHistory.builder()
-                    .status(VideoStatus.END)
-                    .playTime(currentVideo.getDuration())
-                    .build();
+        if(Objects.equals(currentVideo.getDuration(), requestDto.getPausedTime())) {
+            requestDto.updatePausedTime(0);
+            userVideoHistoryService.updateVideoHistory(userHistory, VideoStatus.END, requestDto);
         } else {
             // 동영상 "재생" -> 버튼 클릭 시 "정지"로 전환
             if(userHistory.getStatus() == VideoStatus.PLAY) {
-                UserVideoHistory.builder()
-                        .status(VideoStatus.PAUSE)
-                        .playTime(currentPlayTime)
-                        .build();
-            } else { // 동영상 "정지" -> 버튼 클릭 시 "재생"으로 전환
-                UserVideoHistory.builder()
-                        .status(VideoStatus.PLAY)
-                        .playTime(currentPlayTime)
-                        .build();
+                userVideoHistoryService.updateVideoHistory(userHistory, VideoStatus.PAUSE, requestDto);
+            } else {
+                // 동영상 "정지" -> 버튼 클릭 시 "재생"으로 전환
+                userVideoHistoryService.updateVideoHistory(userHistory, VideoStatus.PLAY, requestDto);
             }
         }
 
-        userHistoryRepository.save(userHistory);
-
+        UserResponseDto userResponseDto = new UserResponseDto(userHistory.getUser());
         return UserHistoryResponseDto.builder()
-                .user(userHistory.getUser())
+                .user(userResponseDto)
                 .video(userHistory.getVideo())
                 .status(userHistory.getStatus())
                 .build();

@@ -6,5 +6,10 @@ import java.time.LocalDateTime;
 
 @Getter
 public class VideoControlReqeustDto {
-    private LocalDateTime pausedTime;
+    private long pausedTime;
+    private long watchTime;
+
+    public void updatePausedTime(long pausedTime) {
+        this.pausedTime = pausedTime;
+    }
 }

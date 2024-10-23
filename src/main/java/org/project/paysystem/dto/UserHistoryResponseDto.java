@@ -2,7 +2,6 @@ package org.project.paysystem.dto;
 
 import lombok.Builder;
 import lombok.Getter;
-import org.project.paysystem.entity.User;
 import org.project.paysystem.entity.Video;
 import org.project.paysystem.entity.VideoStatus;
 
@@ -10,7 +9,8 @@ import org.project.paysystem.entity.VideoStatus;
 @Builder
 public class UserHistoryResponseDto {
     private Long id;
-    private User user;
+    private UserResponseDto user;
     private Video video;
     private VideoStatus status;
+
 }
