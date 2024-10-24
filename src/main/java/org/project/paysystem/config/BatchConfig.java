@@ -40,7 +40,7 @@ public class BatchConfig {
 
     @Bean
     @Primary
-    public DataSource batchDataSource() {
+    public DataSource metaDataSource() {
         return DataSourceBuilder.create()
                 .url(metaUrl)
                 .username(metaUsername)

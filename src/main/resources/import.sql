@@ -1,4 +1,4 @@
-INSERT INTO paysystem.ads (ads_id,ads_url) VALUES (1, 'https://example.com/ad1'),
+INSERT INTO paysystem.ad (ad_id,ad_url) VALUES (1, 'https://example.com/ad1'),
  (2, 'https://example.com/ad2'),
  (3, 'https://example.com/ad3'),
  (4, 'https://example.com/ad4'),

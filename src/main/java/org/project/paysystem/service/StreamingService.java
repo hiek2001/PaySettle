@@ -124,12 +124,12 @@ public class StreamingService {
         );
 
         // 동영상에 삽입할 광고 1개 랜덤으로 가져오기(실시간성 보장)
-        Ads insertAd = adsRepository.findRandomAdByHash();
+        Ad insertAd = adsRepository.findRandomAdByHash();
 
         // 해당 동영상에 광고 연결하여 저장
         VideoAdHistory newVideoAdHistory = VideoAdHistory.builder()
                 .video(video)
-                .ads(insertAd)
+                .ad(insertAd)
                 .build();
 
         videoAdHistoryRepository.save(newVideoAdHistory);
