@@ -1,30 +1,24 @@
 package org.project.paysystem.config;
 
 import jakarta.persistence.EntityManagerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 
 @Configuration
 public class BatchConfig {
-
-    @Value("${spring.datasource.data.url}")
-    private String url;
-
-    @Value("${spring.datasource.data.username}")
-    private String username;
-
-    @Value("${spring.datasource.data.password}")
-    private String password;
-
-    @Value("${spring.datasource.data.driver-class-name}")
-    private String driverClassName;
 
     @Value("${spring.datasource.meta.url}")
     private String metaUrl;
@@ -38,7 +32,7 @@ public class BatchConfig {
     @Value("${spring.datasource.meta.driver-class-name}")
     private String metaDriverClassName;
 
-    @Bean
+    @Bean(name = "metaDataSource")
     @Primary
     public DataSource metaDataSource() {
         return DataSourceBuilder.create()
@@ -49,20 +43,10 @@ public class BatchConfig {
                 .build();
     }
 
-    @Bean
-    public DataSource dataSource() {
-        return DataSourceBuilder.create()
-                .url(url)
-                .username(username)
-                .password(password)
-                .driverClassName(driverClassName)
-                .build();
+    @Bean(name = "metaTransactionManager")
+    @Primary
+    public PlatformTransactionManager metaTransactionManager() {
+        return new DataSourceTransactionManager(metaDataSource());
     }
 
-    @Bean
-    public PlatformTransactionManager jpaTransactionManager(EntityManagerFactory entityManagerFactory) {
-        JpaTransactionManager jpaTransactionManager = new JpaTransactionManager(entityManagerFactory);
-        jpaTransactionManager.setDataSource(dataSource());
-        return jpaTransactionManager;
-    }
 }
