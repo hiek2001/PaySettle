@@ -24,17 +24,16 @@ public class VideoCumulativeSchedule {
     }
 
     // 매일 저녁 23시 59분에 스케줄링 설정
-    @Scheduled(cron = "59 23 * * * *", zone = "Asia/Seoul")
-    public void VideoViewsCumulativeJob() throws Exception {
+    @Scheduled(cron = "0 59 23 * * *", zone = "Asia/Seoul")
+    public void combinedJob() throws Exception {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
         String date = sdf.format(new Date());
 
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("date", date)
+                .addString("currentDate", date)
                 .toJobParameters();
 
-        jobLauncher.run(jobRegistry.getJob("videoCumulativeJob"), jobParameters);
+        jobLauncher.run(jobRegistry.getJob("combinedJob"), jobParameters);
     }
-
 }

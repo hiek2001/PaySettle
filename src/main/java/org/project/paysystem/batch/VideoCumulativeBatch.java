@@ -2,6 +2,7 @@ package org.project.paysystem.batch;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.project.paysystem.dto.UserVideoHistoryBatchDto;
 import org.project.paysystem.entity.UserVideoHistory;
 import org.project.paysystem.entity.Video;
 import org.project.paysystem.entity.VideoCumulativeStats;
@@ -10,13 +11,9 @@ import org.project.paysystem.repository.VideoCumulativeStatsRepository;
 import org.project.paysystem.repository.VideoPagingRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.scope.context.StepSynchronizationManager;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.item.Chunk;
-import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.RepositoryItemReader;
@@ -28,11 +25,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.util.ArrayList;
-import java.util.List;
+
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Slf4j(topic = "동영상 누적 조회수 N일차 생성 배치")
 @Configuration
@@ -45,6 +40,8 @@ public class VideoCumulativeBatch {
     private final VideoPagingRepository videoRepository;
     private final VideoCumulativeStatsRepository videoCumulativeStatsRepository;
     private final UserVideoHistoryRepository userVideoHistoryRepository;
+
+    private final int chunkSize = 10;
 
     @Bean
     public Job videoCumulativeJob() {
@@ -62,7 +59,7 @@ public class VideoCumulativeBatch {
         log.info("watchTimeStep");
 
         return new StepBuilder("watchTimeStep", jobRepository)
-                .<UserVideoHistory, VideoCumulativeStats> chunk(10, transactionManager)
+                .<UserVideoHistory, VideoCumulativeStats> chunk(chunkSize, transactionManager)
                 .reader(watchTimeReader())
                 .processor(watchTimeProcessor())
                 .writer(watchTimeWriter())
@@ -75,7 +72,7 @@ public class VideoCumulativeBatch {
 
         return new RepositoryItemReaderBuilder<UserVideoHistory>()
                 .name("watchTimeReader")
-                .pageSize(10)
+                .pageSize(chunkSize)
                 .methodName("findLatestHistoryByVideo")
                 .repository(userVideoHistoryRepository)
                 .sorts(Map.of("id", Sort.Direction.DESC))
@@ -128,7 +125,7 @@ public class VideoCumulativeBatch {
         log.info("views Step");
 
         return new StepBuilder("viewsStep", jobRepository)
-                .<Video, VideoCumulativeStats> chunk(10, transactionManager)
+                .<Video, VideoCumulativeStats> chunk(chunkSize, transactionManager)
                 .reader(viewsReader())
                 .processor(viewsProcessor())
                 .writer(viewsWriter())
@@ -142,7 +139,7 @@ public class VideoCumulativeBatch {
 
         return new RepositoryItemReaderBuilder<Video>()
                 .name("viewsReader")
-                .pageSize(10)
+                .pageSize(chunkSize)
                 .methodName("findAll")
                 .repository(videoRepository)
                 .sorts(Map.of("id", Sort.Direction.ASC))

@@ -4,4 +4,7 @@ import org.project.paysystem.entity.Video;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 public interface VideoPagingRepository extends PagingAndSortingRepository<Video, Long> {
+
+    // batch
+    Video findById(Long videoId);
 }
