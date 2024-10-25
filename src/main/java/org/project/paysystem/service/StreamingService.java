@@ -13,6 +13,7 @@ import org.project.paysystem.repository.VideoAdHistoryRepository;
 import org.project.paysystem.repository.VideoRepository;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -29,6 +30,7 @@ public class StreamingService {
     private final UserVideoHistoryService userVideoHistoryService;
     private final MessageSource messageSource;
 
+    @Transactional
     public UserHistoryResponseDto createUserVideoHistory(Long videoId, User user) {
         Video currentVideo = videoRepository.findById(videoId).orElseThrow(() ->
                 new VideoNotFoundException(messageSource.getMessage(
