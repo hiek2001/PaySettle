@@ -18,7 +18,7 @@ public class GlobalPricing {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private int unitPrice;  // 광고 단가 (금액)
+    private double unitPrice;  // 광고 단가 (금액)
 
     @Column(nullable = false)
     @Enumerated(value = EnumType.STRING)

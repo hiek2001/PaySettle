@@ -94,7 +94,7 @@ public class StreamingService {
         }
 
         // 시청 완료
-        if(Objects.equals(currentVideo.getDuration(), requestDto.getPausedTime())) {
+        if(currentVideo.getDuration() <= requestDto.getPausedTime()) {
             requestDto.updatePausedTime(0);
             userVideoHistoryService.updateVideoHistory(userHistory, VideoStatus.END, requestDto);
         } else {
