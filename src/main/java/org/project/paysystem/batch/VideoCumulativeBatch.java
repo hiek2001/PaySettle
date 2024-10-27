@@ -78,7 +78,7 @@ public class VideoCumulativeBatch {
         log.info("watchTimeReader");
 
         return new JpaPagingItemReaderBuilder<UserVideoHistoryBatchDto>()
-                .name("videoWatchTimeReader")
+                .name("watchTimeReader")
                 .entityManagerFactory(entityManagerFactory)
                 .queryString("SELECT new org.project.paysystem.dto.UserVideoHistoryBatchDto(u.video.id, SUM(u.watchTime)) " +
                         "FROM UserVideoHistory u GROUP BY u.video.id")

@@ -38,7 +38,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-@Slf4j(topic = "동영상 일별 통계 테이블 배치")
+@Slf4j(topic = "동영상 일별 통계")
 @Configuration
 @RequiredArgsConstructor
 public class VideoDailyStatsBatch {

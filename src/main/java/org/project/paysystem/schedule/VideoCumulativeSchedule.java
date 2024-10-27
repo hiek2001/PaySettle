@@ -8,9 +8,11 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.annotation.Configuration;
 
 import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.Date;
 
-@Slf4j(topic="동영상 누적 조회수, 재생 시간 N일차 생성 스케줄러")
+@Slf4j(topic="동영상 누적 조회수, 재생 시간 N일차, 일별 통계 실행 스케줄러")
 @Configuration
 public class VideoCumulativeSchedule {
 
@@ -35,6 +37,18 @@ public class VideoCumulativeSchedule {
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("combinedJob"), jobParameters);
+
+        // 일요일이면 주간 스케줄러를 추가 실행
+        if (isSunday()) {
+            runWeeklyJob(jobParameters);
+        }
     }
 
+    private void runWeeklyJob(JobParameters jobParameters) throws Exception {
+        jobLauncher.run(jobRegistry.getJob("videoWeeklyStatsJob"), jobParameters);
+    }
+
+    private boolean isSunday() {
+        return LocalDate.now().getDayOfWeek() == DayOfWeek.SUNDAY;
+    }
 }

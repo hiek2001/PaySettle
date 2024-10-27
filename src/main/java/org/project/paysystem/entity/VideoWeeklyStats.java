@@ -2,6 +2,7 @@ package org.project.paysystem.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -26,4 +27,12 @@ public class VideoWeeklyStats {
     private long weeklyWatchTime;
 
     private LocalDate createdAt;
+
+    @Builder
+    public VideoWeeklyStats(Video video, long weeklyViews, long weeklyWatchTime) {
+        this.video = video;
+        this.weeklyViews = weeklyViews;
+        this.weeklyWatchTime = weeklyWatchTime;
+        this.createdAt = LocalDate.now();
+    }
 }
