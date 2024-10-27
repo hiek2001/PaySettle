@@ -7,5 +7,5 @@ import java.util.Optional;
 
 public interface VideoDailyStatsRepository extends JpaRepository<VideoDailyStats, Long> {
     // batch
-    VideoDailyStats findByVideoId(Long id);
+    VideoDailyStats findByVideoId(Long videoId);
 }

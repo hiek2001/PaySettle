@@ -2,8 +2,10 @@ package org.project.paysystem.dto;
 
 import lombok.Getter;
 
+import java.io.Serializable;
+
 @Getter
-public class UserVideoHistoryBatchDto {
+public class UserVideoHistoryBatchDto implements Serializable {
     private Long videoId;
     private Long watchTime;
 

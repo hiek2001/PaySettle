@@ -73,6 +73,7 @@ public class StreamingService {
                 .build();
     }
 
+    @Transactional
     public UserHistoryResponseDto updateVideoPlayback(Long videoId, VideoControlReqeustDto requestDto, User user) {
         Video currentVideo = videoRepository.findById(videoId).orElseThrow(() ->
                 new VideoNotFoundException(messageSource.getMessage(

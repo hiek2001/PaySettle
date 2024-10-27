@@ -1,9 +1,9 @@
 package org.project.paysystem.batch;
 
+import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.project.paysystem.dto.UserVideoHistoryBatchDto;
-import org.project.paysystem.entity.UserVideoHistory;
 import org.project.paysystem.entity.Video;
 import org.project.paysystem.entity.VideoCumulativeStats;
 import org.project.paysystem.repository.UserVideoHistoryRepository;
@@ -11,6 +11,7 @@ import org.project.paysystem.repository.VideoCumulativeStatsRepository;
 import org.project.paysystem.repository.VideoPagingRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -20,12 +21,16 @@ import org.springframework.batch.item.data.RepositoryItemReader;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
+import org.springframework.batch.item.database.JpaPagingItemReader;
+import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.PlatformTransactionManager;
 
-
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
 
@@ -36,6 +41,8 @@ public class VideoCumulativeBatch {
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
+    private final EntityManagerFactory entityManagerFactory;
+
 
     private final VideoPagingRepository videoRepository;
     private final VideoCumulativeStatsRepository videoCumulativeStatsRepository;
@@ -59,38 +66,44 @@ public class VideoCumulativeBatch {
         log.info("watchTimeStep");
 
         return new StepBuilder("watchTimeStep", jobRepository)
-                .<UserVideoHistory, VideoCumulativeStats> chunk(chunkSize, transactionManager)
+                .<UserVideoHistoryBatchDto, VideoCumulativeStats> chunk(chunkSize, transactionManager)
                 .reader(watchTimeReader())
-                .processor(watchTimeProcessor())
+                .processor(watchTimeProcessor(null))
                 .writer(watchTimeWriter())
                 .build();
     }
 
     @Bean
-    public RepositoryItemReader<UserVideoHistory> watchTimeReader() {
+    public JpaPagingItemReader<UserVideoHistoryBatchDto> watchTimeReader() {
         log.info("watchTimeReader");
 
-        return new RepositoryItemReaderBuilder<UserVideoHistory>()
-                .name("watchTimeReader")
+        return new JpaPagingItemReaderBuilder<UserVideoHistoryBatchDto>()
+                .name("videoWatchTimeReader")
+                .entityManagerFactory(entityManagerFactory)
+                .queryString("SELECT new org.project.paysystem.dto.UserVideoHistoryBatchDto(u.video.id, SUM(u.watchTime)) " +
+                        "FROM UserVideoHistory u GROUP BY u.video.id")
                 .pageSize(chunkSize)
-                .methodName("findLatestHistoryByVideo")
-                .repository(userVideoHistoryRepository)
-                .sorts(Map.of("id", Sort.Direction.DESC))
                 .build();
 
     }
 
+
     @Bean
-    public ItemProcessor<UserVideoHistory, VideoCumulativeStats> watchTimeProcessor() {
+    @StepScope
+    public ItemProcessor<UserVideoHistoryBatchDto, VideoCumulativeStats> watchTimeProcessor(
+            @Value("#{jobParameters[currentDate]}") String currentDate) {
         log.info("watchTimeProcessor");
 
-        return new ItemProcessor<UserVideoHistory, VideoCumulativeStats>() {
+        return new ItemProcessor<UserVideoHistoryBatchDto, VideoCumulativeStats>() {
 
             @Override
-            public VideoCumulativeStats process(UserVideoHistory userVideoHistory) throws Exception {
-                Video video = userVideoHistory.getVideo();
+            public VideoCumulativeStats process(UserVideoHistoryBatchDto userVideoHistory) throws Exception {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10));
 
-                Optional<VideoCumulativeStats> optionalStats = videoCumulativeStatsRepository.findByVideoId(video.getId());
+                Video video = videoRepository.findById(userVideoHistory.getVideoId());
+
+                Optional<VideoCumulativeStats> optionalStats = videoCumulativeStatsRepository.findByVideoIdAndCreatedAt(video.getId(), parsedDate);
                 if (optionalStats.isPresent()) { // 존재하면 업데이트
                     VideoCumulativeStats stats = optionalStats.get();
                     stats.updateCumulativeWatchTime(userVideoHistory.getWatchTime());

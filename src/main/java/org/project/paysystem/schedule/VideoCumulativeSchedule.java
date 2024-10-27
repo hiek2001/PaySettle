@@ -6,7 +6,6 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -24,7 +23,8 @@ public class VideoCumulativeSchedule {
     }
 
     // 매일 저녁 23시 59분에 스케줄링 설정
-    @Scheduled(cron = "0 59 23 * * *", zone = "Asia/Seoul")
+    // @Scheduled(cron = "*/5 * * * * *", zone = "Asia/Seoul") // 테스트용
+   // @Scheduled(cron = "0 59 23 * * *", zone = "Asia/Seoul")
     public void combinedJob() throws Exception {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
@@ -36,4 +36,5 @@ public class VideoCumulativeSchedule {
 
         jobLauncher.run(jobRegistry.getJob("combinedJob"), jobParameters);
     }
+
 }
