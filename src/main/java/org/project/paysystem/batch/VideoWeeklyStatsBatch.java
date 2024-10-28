@@ -3,7 +3,7 @@ package org.project.paysystem.batch;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.project.paysystem.dto.VideoDailyStatusBatchDto;
+import org.project.paysystem.dto.VideoDailyStatsBatchDto;
 import org.project.paysystem.entity.Video;
 import org.project.paysystem.entity.VideoWeeklyStats;
 import org.project.paysystem.repository.VideoRepository;
@@ -58,7 +58,7 @@ public class VideoWeeklyStatsBatch {
         log.info("weeklyStatsStep ");
 
         return new StepBuilder("weeklyViewsStep", jobRepository)
-                .<VideoDailyStatusBatchDto, VideoWeeklyStats> chunk(chunkSize, transactionManager)
+                .<VideoDailyStatsBatchDto, VideoWeeklyStats> chunk(chunkSize, transactionManager)
                 .reader(getDailyStatsReader(null))
                 .processor(weeklyStatsProcessor())
                 .writer(weeklyStatsWriter())
@@ -69,7 +69,7 @@ public class VideoWeeklyStatsBatch {
     // 일별 조회수, 재생 시간에서 7일 합산하여 가져오기
     @Bean
     @StepScope
-    public JpaPagingItemReader<VideoDailyStatusBatchDto> getDailyStatsReader(
+    public JpaPagingItemReader<VideoDailyStatsBatchDto> getDailyStatsReader(
             @Value("#{jobParameters[currentDate]}") String currentDate) {
 
         log.info("getDailyStatsReader");
@@ -78,7 +78,7 @@ public class VideoWeeklyStatsBatch {
         LocalDate endDate = LocalDate.parse(currentDate.substring(0, 10), formatter);
         LocalDate startDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(6);
 
-        return new JpaPagingItemReaderBuilder<VideoDailyStatusBatchDto>()
+        return new JpaPagingItemReaderBuilder<VideoDailyStatsBatchDto>()
                 .name("getDailyStatsReader")
                 .entityManagerFactory(entityManagerFactory)
                 .queryString("SELECT new org.project.paysystem.dto.VideoDailyStatusBatchDto(vds.video.id, SUM(vds.dailyViews), SUM(vds.dailyWatchTime)) FROM VideoDailyStats vds " +
@@ -90,13 +90,13 @@ public class VideoWeeklyStatsBatch {
 
     // 주간
     @Bean
-    public ItemProcessor<VideoDailyStatusBatchDto, VideoWeeklyStats> weeklyStatsProcessor() {
+    public ItemProcessor<VideoDailyStatsBatchDto, VideoWeeklyStats> weeklyStatsProcessor() {
         log.info("weeklyStatsProcessor");
 
-        return new ItemProcessor<VideoDailyStatusBatchDto, VideoWeeklyStats>() {
+        return new ItemProcessor<VideoDailyStatsBatchDto, VideoWeeklyStats>() {
 
             @Override
-            public VideoWeeklyStats process(VideoDailyStatusBatchDto item) throws Exception {
+            public VideoWeeklyStats process(VideoDailyStatsBatchDto item) throws Exception {
                 Video video = videoRepository.batchFindById(item.getVideoId());
 
                 return VideoWeeklyStats.builder()

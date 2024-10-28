@@ -46,7 +46,6 @@ public class VideoCumulativeBatch {
 
     private final VideoPagingRepository videoRepository;
     private final VideoCumulativeStatsRepository videoCumulativeStatsRepository;
-    private final UserVideoHistoryRepository userVideoHistoryRepository;
 
     private final int chunkSize = 10;
 

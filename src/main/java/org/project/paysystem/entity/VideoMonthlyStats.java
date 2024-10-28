@@ -2,6 +2,7 @@ package org.project.paysystem.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -26,4 +27,12 @@ public class VideoMonthlyStats {
     private long monthlyWatchTime;
 
     private LocalDate createdAt;
+
+    @Builder
+    public VideoMonthlyStats(Video video, long monthlyViews, long monthlyWatchTime, LocalDate createdAt) {
+        this.video = video;
+        this.monthlyViews = monthlyViews;
+        this.monthlyWatchTime = monthlyWatchTime;
+        this.createdAt = createdAt;
+    }
 }

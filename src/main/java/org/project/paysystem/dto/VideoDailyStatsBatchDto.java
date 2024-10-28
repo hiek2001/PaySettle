@@ -3,12 +3,12 @@ package org.project.paysystem.dto;
 import lombok.Getter;
 
 @Getter
-public class VideoDailyStatusBatchDto {
+public class VideoDailyStatsBatchDto {
     private Long videoId;
     private Long dailyViews;
     private Long dailyWatchTime;
 
-    public VideoDailyStatusBatchDto(Long videoId, Long dailyViews, Long dailyWatchTime) {
+    public VideoDailyStatsBatchDto(Long videoId, Long dailyViews, Long dailyWatchTime) {
         this.videoId = videoId;
         this.dailyViews = dailyViews;
         this.dailyWatchTime = dailyWatchTime;
