@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.project.paysystem.dto.UserVideoHistoryBatchDto;
 import org.project.paysystem.entity.Video;
 import org.project.paysystem.entity.VideoCumulativeStats;
-import org.project.paysystem.repository.UserVideoHistoryRepository;
 import org.project.paysystem.repository.VideoCumulativeStatsRepository;
 import org.project.paysystem.repository.VideoPagingRepository;
 import org.springframework.batch.core.Job;

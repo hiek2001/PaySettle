@@ -3,11 +3,9 @@ package org.project.paysystem.batch;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.project.paysystem.dto.VideoDailyStatsBatchDto;
 import org.project.paysystem.dto.VideoWeeklyStatsBatchDto;
 import org.project.paysystem.entity.Video;
 import org.project.paysystem.entity.VideoMonthlyStats;
-import org.project.paysystem.entity.VideoWeeklyStats;
 import org.project.paysystem.repository.VideoMonthlyStatsRepository;
 import org.project.paysystem.repository.VideoRepository;
 import org.springframework.batch.core.Job;
@@ -27,7 +25,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 @Slf4j(topic = "동영상 월별 통계 배치")

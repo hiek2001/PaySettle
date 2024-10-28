@@ -8,29 +8,34 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import java.time.YearMonth;
 
-@Slf4j(topic="동영상 월별 통계 스케줄러")
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+@Slf4j(topic="동영상 주간 통계 스케줄러")
 @Configuration
-public class VideoMonthlyStatsSchedule {
+public class StatsTestSchedule {
 
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
 
-    public VideoMonthlyStatsSchedule(JobLauncher jobLauncher, JobRegistry jobRegistry) {
+    public StatsTestSchedule(JobLauncher jobLauncher, JobRegistry jobRegistry) {
         this.jobLauncher = jobLauncher;
         this.jobRegistry = jobRegistry;
     }
 
+    // 매주 일요일
+   // @Scheduled(cron = "0 59 23 7 * *", zone = "Asia/Seoul")
+   // @Scheduled(cron = "*/5 * * * * *", zone = "Asia/Seoul")
+    public void videoWeeklyStatsJob() throws Exception {
 
-   // 매달 1일에 실행
-    //@Scheduled(cron = "0 0 0 1 * ?", zone = "Asia/Seoul")
-    public void videoMonthlyStatsJob() throws Exception {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
+        String date = sdf.format(new Date());
+
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("targetMonth", YearMonth.now().minusMonths(1).toString()) // 이전 달을 집계 대상으로 지정
+                .addString("currentDate", date)
                 .toJobParameters();
 
-        jobLauncher.run(jobRegistry.getJob("videoMonthlyStatsJob"), jobParameters);
+        jobLauncher.run(jobRegistry.getJob("videoWeeklyStatsJob"), jobParameters);
     }
-
 }

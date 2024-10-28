@@ -61,9 +61,9 @@ public class WebSecurityConfig {
         http.authorizeHttpRequests((authorizeRequests) ->
                 authorizeRequests
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-                        .requestMatchers("/api/users/**").permitAll()
+                        .requestMatchers("/api/users/**","/api/stats/**").permitAll()
                         .requestMatchers("/api/videos/**").hasRole("USER")
-                        .requestMatchers("/api/sellers/**").hasRole("SELLER")
+                       // .requestMatchers("/api/stats/**").hasRole("SELLER")
                         .anyRequest().authenticated()
         );
 
