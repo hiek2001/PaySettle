@@ -9,22 +9,27 @@ public class RankVideoInfoDto {
     private int rank = 0;
     private Video video;
     private long totalViews;
+    private long totalWatchTime;
 
-    @Builder
-    public RankVideoInfoDto(Video video, long totalViews) {
-        this.totalViews = totalViews;
-        this.video = video;
-    }
-
-    @Builder
-    public RankVideoInfoDto(int rank, Video video, long totalViews) {
-        this.rank = rank;
-        this.totalViews = totalViews;
-        this.video = video;
-    }
-
+    // setter
     public void updateRank(int rank) {
         this.rank = rank;
     }
+
+    public RankVideoInfoDto(int rank, Video video, long totalViews, long totalWatchTime) {
+        this.rank = rank;
+        this.video = video;
+        this.totalViews = totalViews;
+        this.totalWatchTime = totalWatchTime;
+    }
+
+
+    @Builder
+    public RankVideoInfoDto(Video video, long totalViews, long totalWatchTime) {
+        this.totalViews = totalViews;
+        this.video = video;
+        this.totalWatchTime = totalWatchTime;
+    }
+
 
 }

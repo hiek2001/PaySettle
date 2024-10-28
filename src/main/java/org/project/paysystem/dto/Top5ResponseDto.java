@@ -10,12 +10,14 @@ import java.util.List;
 public class Top5ResponseDto {
     private int count;
     private String period;
+    private String type;
     private LocalDate searchDate;
     private List<RankVideoInfoDto> rankVideoInfoDtoList;
 
     @Builder
-    public Top5ResponseDto(String period, LocalDate searchDate, List<RankVideoInfoDto> rankVideoInfoDtoList) {
+    public Top5ResponseDto(String period, String type, LocalDate searchDate, List<RankVideoInfoDto> rankVideoInfoDtoList) {
         this.count = rankVideoInfoDtoList.size();
+        this.type = type;
         this.period = period;
         this.searchDate = searchDate;
         this.rankVideoInfoDtoList = rankVideoInfoDtoList;

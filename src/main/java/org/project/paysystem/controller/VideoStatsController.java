@@ -2,7 +2,7 @@ package org.project.paysystem.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.project.paysystem.dto.Top5ResponseDto;
-import org.project.paysystem.dto.TopViewsRequestDto;
+import org.project.paysystem.dto.Top5RequestDto;
 import org.project.paysystem.service.VideoStatsService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,8 +19,8 @@ public class VideoStatsController {
     private final VideoStatsService videoStatsService;
 
     // 일, 주, 월별 조회수 Top5 조회
-    @GetMapping("/top5-views-video")
-    public Top5ResponseDto top5ViewsVideo(@RequestBody TopViewsRequestDto requestDto) {
+    @GetMapping("/top5-video")
+    public Top5ResponseDto top5ViewsVideo(@RequestBody Top5RequestDto requestDto) {
         return videoStatsService.top5ViewsVideo(requestDto);
     }
 

@@ -14,7 +14,11 @@ public interface VideoWeeklyStatsRepository extends JpaRepository<VideoWeeklySta
     @Query("SELECT vws.createdAt FROM VideoWeeklyStats vws ORDER BY vws.createdAt DESC LIMIT 1")
     LocalDate findWeeklyLastUpdate();
 
-    @Query("SELECT new org.project.paysystem.dto.RankVideoInfoDto(vws.video, vws.weeklyViews) FROM VideoWeeklyStats vws "+
+    @Query("SELECT new org.project.paysystem.dto.RankVideoInfoDto(vws.video, vws.weeklyViews, 0) FROM VideoWeeklyStats vws "+
             "WHERE vws.createdAt = :targetDate ORDER BY vws.weeklyViews DESC LIMIT 5"
     ) List<RankVideoInfoDto> findTop5ByCreatedAtOrderByWeeklyViewsDesc(@Param("targetDate") LocalDate targetDate);
+
+    @Query("SELECT new org.project.paysystem.dto.RankVideoInfoDto(vws.video, 0, vws.weeklyWatchTime) FROM VideoWeeklyStats vws "+
+            "WHERE vws.createdAt = :targetDate ORDER BY vws.weeklyWatchTime DESC LIMIT 5"
+    ) List<RankVideoInfoDto> findTop5ByCreatedAtOrderByWeeklyWatchTimeDesc(@Param("targetDate") LocalDate nextSunday);
 }
