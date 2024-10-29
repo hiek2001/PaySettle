@@ -12,7 +12,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Date;
 
-@Slf4j(topic="동영상 누적 조회수, 재생 시간 N일차, 일별 통계 실행 스케줄러")
+@Slf4j(topic="동영상 누적 조회수, 재생 시간 N일차, 일별 통계, 일별 정산 실행 스케줄러")
 @Configuration
 public class VideoCumulativeSchedule {
 

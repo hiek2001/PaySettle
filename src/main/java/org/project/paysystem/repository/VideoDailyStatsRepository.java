@@ -3,6 +3,8 @@ package org.project.paysystem.repository;
 
 import org.project.paysystem.dto.RankVideoInfoDto;
 import org.project.paysystem.entity.VideoDailyStats;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,4 +32,6 @@ public interface VideoDailyStatsRepository extends JpaRepository<VideoDailyStats
 
     // batch
     VideoDailyStats findByVideoId(Long videoId);
+
+    Page<VideoDailyStats> findByCreatedAt(@Param("currentDate") LocalDate currentDate, Pageable pageable);
 }

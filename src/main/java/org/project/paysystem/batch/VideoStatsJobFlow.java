@@ -18,6 +18,7 @@ public class VideoStatsJobFlow {
 
     private final Job videoCumulativeJob;
     private final Job videoDailyStatsJob;
+    private final Job videoDailyRevenueJob;
     private final VideoStatsJobDecider jobCompletionDecider;
 
     @Bean
@@ -27,6 +28,8 @@ public class VideoStatsJobFlow {
                 .next(jobCompletionDecider)  // Decider로 상태 확인
                 .on("*")
                 .to(dailyStatsJobFlow(videoDailyStatsJob)) // 첫 번째 Job이 완료되면 두 번째 Job 실행
+                .on("COMPLETED")
+                .to(revenueJobFlow(videoDailyRevenueJob))
                 .end()  // Job 종료
                 .build();
     }
@@ -45,6 +48,15 @@ public class VideoStatsJobFlow {
         return new FlowBuilder<Flow>("dailyStatsJobFlow")
                 .start(new JobStepBuilder(new StepBuilder("videoDailyStatsStep", jobRepository))
                         .job(videoDailyStatsJob)
+                        .build())
+                .build();
+    }
+
+    @Bean
+    public Flow revenueJobFlow(Job videoDailyRevenueJob) {
+        return new FlowBuilder<Flow>("revenueJobFlow")
+                .start(new JobStepBuilder(new StepBuilder("videoDailyRevenueStep", jobRepository))
+                        .job(videoDailyRevenueJob)
                         .build())
                 .build();
     }
