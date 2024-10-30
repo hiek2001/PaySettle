@@ -2,6 +2,7 @@ package org.project.paysystem.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -42,7 +43,4 @@ public class GlobalPricing implements Serializable {
         this.maxViews = maxViews;
     }
 
-    public boolean isInVideoViewRange(long views) {
-        return views >= minViews && (maxViews == 0 || views <= maxViews);
-    }
 }

@@ -1,14 +1,16 @@
 package org.project.paysystem.batch;
 
+import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.project.paysystem.dto.AdCountBatchDto;
+import org.project.paysystem.entity.AdDailyRevenue;
 import org.project.paysystem.entity.GlobalPricing;
 import org.project.paysystem.entity.MediaTypeEnum;
-import org.project.paysystem.entity.VideoDailyRevenue;
-import org.project.paysystem.entity.VideoDailyStats;
+import org.project.paysystem.entity.Video;
+import org.project.paysystem.repository.AdDailyRevenueRepository;
 import org.project.paysystem.repository.GlobalPricingRepository;
-import org.project.paysystem.repository.VideoDailyRevenueRepository;
-import org.project.paysystem.repository.VideoDailyStatsRepository;
+import org.project.paysystem.repository.VideoRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -19,44 +21,44 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.data.RepositoryItemReader;
 import org.springframework.batch.item.data.RepositoryItemWriter;
-import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
+import org.springframework.batch.item.database.JpaPagingItemReader;
+import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.domain.Sort;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.text.ParseException;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j(topic = "동영상 일별 정산 배치")
+@Slf4j(topic = "광고 일별 정산 배치")
 @Configuration
 @RequiredArgsConstructor
-public class VideoDailyRevenueBatch {
-
+public class AdDailyRevenueBatch {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
+    private final EntityManagerFactory entityManagerFactory;
 
-    private final VideoDailyStatsRepository videoDailyStatsRepository;
     private final GlobalPricingRepository pricingRepository;
-    private final VideoDailyRevenueRepository dailyRevenueRepository;
+    private final VideoRepository videoRepository;
+    private final AdDailyRevenueRepository adRevenueRepository;
 
     private final int chunkSize = 10;
-    private MediaTypeEnum type = MediaTypeEnum.VIDEO;
+    private MediaTypeEnum type = MediaTypeEnum.AD;
 
     @Bean
-    public Job videoDailyRevenueJob() throws ParseException {
-        log.info("videoDailyRevenueJob");
+    public Job adDailyRevenueJob() throws ParseException {
+        log.info("adDailyRevenueJob");
 
-        return new JobBuilder("videoDailyRevenueJob", jobRepository)
+        return new JobBuilder("adDailyRevenueJob", jobRepository)
                 .start(globalPricingTaskletStep())
-                .next(dailyRevenueStep())
+                .next(adDailyRevenueStep())
                 .build();
     }
 
@@ -86,59 +88,62 @@ public class VideoDailyRevenueBatch {
         };
     }
 
-    // Video daily revenue step
+    // Ad daily revenue step
     @Bean
-    public Step dailyRevenueStep() throws ParseException {
-        log.info("dailyRevenueStep");
+    public Step adDailyRevenueStep() throws ParseException {
 
-        return new StepBuilder("dailyRevenueStep", jobRepository)
-                .<VideoDailyStats, VideoDailyRevenue> chunk(chunkSize, transactionManager)
-                .reader(getDailyRevenueReader(null))
-                .processor(dailyRevenueProcessor(null))
-                .writer(dailyRevenueWriter())
+        return new StepBuilder("adDailyRevenueStep", jobRepository)
+                .<AdCountBatchDto, AdDailyRevenue> chunk(chunkSize, transactionManager)
+                .reader(getAdDailyRevenueReader(null))
+                .processor(adDailyRevenueProcessor(null))
+                .writer(adDailyRevenueWriter())
                 .build();
     }
 
     @Bean
     @StepScope
-    public RepositoryItemReader<VideoDailyStats> getDailyRevenueReader(
-            @Value("#{jobParameters[currentDate]}") String targetDate) throws ParseException {
-        LocalDate currentDate = LocalDate.parse(targetDate.substring(0, 10));
+    public JpaPagingItemReader<AdCountBatchDto> getAdDailyRevenueReader(
+            @Value("#{jobParameters[currentDate]}") String currentDate) {
 
-        return new RepositoryItemReaderBuilder<VideoDailyStats>()
-                .name("getDailyRevenueReader")
-                .repository(videoDailyStatsRepository)
-                .methodName("findByCreatedAt")
-                .arguments(currentDate)
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter);
+
+        return new JpaPagingItemReaderBuilder<AdCountBatchDto>()
+                .name("getAdDailyRevenueReader")
+                .entityManagerFactory(entityManagerFactory)
+                .queryString("SELECT new org.project.paysystem.dto.AdCountBatchDto(vah.video.id, COUNT(vah.ad.id)) FROM VideoAdHistory vah "+
+                            "WHERE vah.createdAt = :currentDate GROUP BY vah.video.id"
+                )
+                .parameterValues(Map.of("currentDate", parsedDate))
                 .pageSize(chunkSize)
-                .sorts(Map.of("id", Sort.Direction.ASC))
                 .build();
 
     }
 
     @Bean
     @StepScope
-    public ItemProcessor<VideoDailyStats, VideoDailyRevenue> dailyRevenueProcessor(
+    public ItemProcessor<AdCountBatchDto, AdDailyRevenue> adDailyRevenueProcessor(
             @Value("#{jobExecutionContext[priceList]}") List<GlobalPricing> priceList) {
 
-        return new ItemProcessor<VideoDailyStats, VideoDailyRevenue>() {
+        return new ItemProcessor<AdCountBatchDto, AdDailyRevenue>() {
 
             @Override
-            public VideoDailyRevenue process(VideoDailyStats item) throws Exception {
-                long totalAmount = calculateAmountForViews(priceList, item.getDailyViews());
+            public AdDailyRevenue process(AdCountBatchDto item) throws Exception {
+                long totalAmount = calculateAmountForViews(priceList, item.getAdCount());
 
-                return VideoDailyRevenue.builder()
-                        .video(item.getVideo())
-                        .videoAmount(totalAmount)
+                Video video = videoRepository.batchFindById(item.getVideoId());
+                return AdDailyRevenue.builder()
+                        .video(video)
+                        .adAmount(totalAmount)
                         .build();
             }
         };
     }
 
     @Bean
-    public RepositoryItemWriter<VideoDailyRevenue> dailyRevenueWriter() {
-        return new RepositoryItemWriterBuilder<VideoDailyRevenue>()
-                .repository(dailyRevenueRepository)
+    public RepositoryItemWriter<AdDailyRevenue> adDailyRevenueWriter() {
+        return new RepositoryItemWriterBuilder<AdDailyRevenue>()
+                .repository(adRevenueRepository)
                 .methodName("save")
                 .build();
     }
