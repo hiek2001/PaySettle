@@ -147,23 +147,33 @@ public class VideoDailyRevenueBatch {
         long totalAmount = 0;
         long remainingViews = views;
 
-        for(GlobalPricing price : priceList) {
-            // 현재 구간의 조회수 범위
+        for (int i = 0; i < priceList.size(); i++) {
+            GlobalPricing price = priceList.get(i);
             long minViews = price.getMinViews();
-            long maxViews = (price.getMaxViews() == 0) ? remainingViews : price.getMaxViews();
+            long maxViews = price.getMaxViews() == 0 ? Long.MAX_VALUE : price.getMaxViews(); // 상한이 없는 경우를 처리
 
-            // 남은 조회수가 현재 구간의 조회수 범위를 초과할 경우
-            if(remainingViews > minViews) {
-                long viewsInRange =  maxViews - minViews;
+            // 마지막 구간 여부를 확인
+            boolean isLastTier = (i == priceList.size() - 1);
 
-                totalAmount += (long) (viewsInRange * price.getUnitPrice());
-                remainingViews -= viewsInRange;
+            if (isLastTier) {
+                // 마지막 구간에서는 remainingViews 전체에 단가를 적용
+                totalAmount += (long) (remainingViews * price.getUnitPrice());
+                break;
+            } else {
+                // 마지막 구간이 아닐 때는 구간별 조회수를 계산
+                if (remainingViews > minViews) {
+                    long viewsInThisRange = Math.min(remainingViews, maxViews - minViews);
 
-                if(remainingViews <= 0) { // 모든 조회수 처리 완료
-                    break;
+                    totalAmount += (long) (viewsInThisRange * price.getUnitPrice());
+                    remainingViews -= viewsInThisRange;
                 }
             }
+            // 남은 조회수가 0이면 더 이상 계산하지 않음
+            if (remainingViews <= 0) {
+                break;
+            }
         }
+
         return totalAmount;
     }
 }
