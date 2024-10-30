@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Getter
@@ -27,12 +27,12 @@ public class VideoAdHistory {
     @JoinColumn(name="ad_id")
     private Ad ad;
 
-    private LocalDateTime watchedTime; // 광고를 시청한 시간
+    private LocalDate createdAt; // 광고를 시청한 시간
 
     @Builder
     public VideoAdHistory(Video video, Ad ad) {
         this.video = video;
         this.ad = ad;
-        this.watchedTime = LocalDateTime.now();
+        this.createdAt = LocalDate.now();
     }
 }

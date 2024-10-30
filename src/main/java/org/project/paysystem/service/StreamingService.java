@@ -7,7 +7,7 @@ import org.project.paysystem.dto.VideoControlReqeustDto;
 import org.project.paysystem.entity.*;
 import org.project.paysystem.exception.UserHistoryNotFoundException;
 import org.project.paysystem.exception.VideoNotFoundException;
-import org.project.paysystem.repository.AdsRepository;
+import org.project.paysystem.repository.AdRepository;
 import org.project.paysystem.repository.UserVideoHistoryRepository;
 import org.project.paysystem.repository.VideoAdHistoryRepository;
 import org.project.paysystem.repository.VideoRepository;
@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +23,7 @@ public class StreamingService {
 
     private final VideoRepository videoRepository;
     private final UserVideoHistoryRepository userHistoryRepository;
-    private final AdsRepository adsRepository;
+    private final AdRepository adRepository;
     private final VideoAdHistoryRepository videoAdHistoryRepository;
 
     private final UserVideoHistoryService userVideoHistoryService;
@@ -127,7 +126,7 @@ public class StreamingService {
         );
 
         // 동영상에 삽입할 광고 1개 랜덤으로 가져오기(실시간성 보장)
-        Ad insertAd = adsRepository.findRandomAdByHash();
+        Ad insertAd = adRepository.findRandomAdByHash();
 
         // 해당 동영상에 광고 연결하여 저장
         VideoAdHistory newVideoAdHistory = VideoAdHistory.builder()

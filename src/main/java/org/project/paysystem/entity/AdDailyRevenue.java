@@ -2,8 +2,11 @@ package org.project.paysystem.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
 
 @Entity
 @Getter
@@ -17,8 +20,17 @@ public class AdDailyRevenue {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="ad_id")
-    private Ad ad;
+    @JoinColumn(name="video_id")
+    private Video video; // 동영상에 삽입된 광고로 정산
 
     private Long adAmount; // 광고 정산 금액
+
+    private LocalDate createdAt;
+
+    @Builder
+    public AdDailyRevenue(Video video, Long adAmount, LocalDate createdAt) {
+        this.video = video;
+        this.adAmount = adAmount;
+        this.createdAt = LocalDate.now();
+    }
 }
