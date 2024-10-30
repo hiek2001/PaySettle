@@ -59,6 +59,11 @@ public class DataDBConfig {
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(EntityManagerFactoryBuilder builder) {
         Map<String, Object> properties = hibernateProperties.determineHibernateProperties(
                 jpaProperties.getProperties(), new HibernateSettings());
+
+        properties.put("hibernate.show_sql", true);  // SQL 로그 출력
+        properties.put("hibernate.format_sql", true);  // SQL 포맷팅
+        properties.put("hibernate.highlight_sql", true);
+
         return builder
                 .dataSource(dataSource())
                 .packages("org.project.paysystem.entity")  // 엔티티 클래스 패키지 설정
