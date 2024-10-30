@@ -52,13 +52,13 @@ public class VideoStatsService {
     @Transactional
     public List<RankVideoInfoDto> fetchPeriodViewsData(String currentDate, String period, String type) {
         List<RankVideoInfoDto> rankVideoInfoDtoList = new ArrayList<>();
-        LocalDate lastUpdateDate = lastUpdatedStatsUtil.fetchLastUpdatedStatsDate(period); // 통계 테이블에 마지막으로 적재한 날짜 가져오기
+        LocalDate lastUpdateDate = lastUpdatedStatsUtil.fetchLastUpdatedStatsDate(period, null); // 통계 테이블에 마지막으로 적재한 날짜 가져오기
 
         if(period.equals("day")) {
             LocalDate targetDate = LocalDate.parse(currentDate.substring(0, 10));
 
 
-            if(!targetDate.isAfter(lastUpdateDate)) { // 일별 테이블에서 가져오기
+            if(!targetDate.isAfter(lastUpdateDate)) { // 일별 테이블에서 가져오기, 통계 테이블에 계산되어 있지 않은 금일 날짜는 실시간 계산하기 위해 넣은 로직(추후 예정)
                 if(type.equals("views")) { // 조회수
                     rankVideoInfoDtoList = dailyStatsRepository.findTop5ByCreatedAtOrderByDailyViewsDesc(targetDate);
 
@@ -108,7 +108,7 @@ public class VideoStatsService {
         return weeklyStatsRepository.findWeeklyLastUpdate();
     }
 
-    private LocalDate getNextSundayFromTargetDate(LocalDate targetDate) {
+    public LocalDate getNextSundayFromTargetDate(LocalDate targetDate) {
         return targetDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
     }
 

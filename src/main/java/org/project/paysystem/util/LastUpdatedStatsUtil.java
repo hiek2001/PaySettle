@@ -18,8 +18,13 @@ public class LastUpdatedStatsUtil {
     @Value("${url.base}")
     private String baseUrl;
 
-    public LocalDate fetchLastUpdatedStatsDate(String period) {
-        String url = baseUrl + "/api/stats/"+period+"/last-updated";
+    public LocalDate fetchLastUpdatedStatsDate(String period, String revenueType) {
+        String part = period;
+        if(revenueType != null || revenueType != "") {
+            part = part + "/" + revenueType;
+        }
+
+        String url = baseUrl + "/api/stats/"+part+"/last-updated";
         ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
         if(response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
