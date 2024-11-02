@@ -20,20 +20,17 @@ public class VideoStatsJobFlow {
     private final Job videoDailyStatsJob;
     private final Job videoDailyRevenueJob;
     private final Job adDailyRevenueJob;
-    private final VideoStatsJobDecider jobCompletionDecider;
 
     @Bean
     public Job combinedJob() {
         return new JobBuilder("combinedJob", jobRepository)
-                .start(cumulativeJobFlow(videoCumulativeJob))  // 첫 번째 Job 시작
-                .next(jobCompletionDecider)  // Decider로 상태 확인
-                .on("COMPLETED")
-                .to(dailyStatsJobFlow(videoDailyStatsJob)) // 첫 번째 Job이 완료되면 두 번째 Job 실행
-                .on("COMPLETED")
-                .to(revenueJobFlow(videoDailyRevenueJob))
-                .on("COMPLETED")
-                .to(revenueJobFlow(adDailyRevenueJob))
-                .end()  // Job 종료
+                .start(cumulativeJobFlow(videoCumulativeJob)).on("FAILED").end() // 실패하면 종료
+                .from(cumulativeJobFlow(videoCumulativeJob)).on("*").to(dailyStatsJobFlow(videoDailyStatsJob)) // 이 외이면 일별 통계 시작
+                .from(dailyStatsJobFlow(videoDailyStatsJob)).on("FAILED").end() // 일별 통계 실패하면 종료
+                .from(dailyStatsJobFlow(videoDailyStatsJob)).on("*").to(revenueJobFlow(videoDailyRevenueJob))// 이 외이면 영상 일별 정산 시작
+                .from(revenueJobFlow(videoDailyRevenueJob)).on("FAILED").end() // 영상 일별 정산 실패하면 종료
+                .from(revenueJobFlow(videoDailyRevenueJob)).on("*").to(adRevenueJobFlow(adDailyRevenueJob)) // 이 외이면 광고 일별 정산 시작
+                .end() // job 종료
                 .build();
     }
 
