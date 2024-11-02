@@ -30,7 +30,6 @@ public interface VideoDailyStatsRepository extends JpaRepository<VideoDailyStats
     ) List<RankVideoInfoDto> findTop5ByCreatedAtOrderByDailyWatchTimeDesc(@Param("targetDate") LocalDate targetDate);
 
     // batch
-    VideoDailyStats findByVideoId(Long videoId);
+    VideoDailyStats findByVideoIdAndCreatedAt(Long videoId, LocalDate createdAt);
 
-    Page<VideoDailyStats> findByCreatedAt(@Param("currentDate") LocalDate currentDate, Pageable pageable);
 }
