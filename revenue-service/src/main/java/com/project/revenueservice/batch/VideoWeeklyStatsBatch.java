@@ -3,8 +3,6 @@ package com.project.revenueservice.batch;
 import com.project.revenueservice.dto.VideoDailyStatsBatchDto;
 import com.project.revenueservice.entity.VideoWeeklyStats;
 import com.project.revenueservice.repository.VideoWeeklyStatsRepository;
-import com.project.streamingservice.entity.Video;
-import com.project.streamingservice.repository.VideoRepository;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +35,6 @@ public class VideoWeeklyStatsBatch {
     private final PlatformTransactionManager transactionManager;
     private final EntityManagerFactory entityManagerFactory;
 
-   //private final VideoRepository videoRepository;
     private final VideoWeeklyStatsRepository weeklyStatsRepository;
 
     private int chunkSize = 10;
@@ -81,8 +78,8 @@ public class VideoWeeklyStatsBatch {
         return new JpaPagingItemReaderBuilder<VideoDailyStatsBatchDto>()
                 .name("getDailyStatsReader")
                 .entityManagerFactory(entityManagerFactory)
-                .queryString("SELECT new com.project.revenueservice.dto.VideoDailyStatusBatchDto(vds.video.id, SUM(vds.dailyViews), SUM(vds.dailyWatchTime)) FROM VideoDailyStats vds " +
-                        "WHERE vds.createdAt BETWEEN :startDate AND :endDate GROUP BY vds.video.id")
+                .queryString("SELECT new com.project.revenueservice.dto.VideoDailyStatsBatchDto(vds.videoId, SUM(vds.dailyViews), SUM(vds.dailyWatchTime)) FROM VideoDailyStats vds " +
+                        "WHERE vds.createdAt BETWEEN :startDate AND :endDate GROUP BY vds.videoId")
                 .parameterValues(Map.of("startDate", startDate, "endDate", endDate))
                 .pageSize(chunkSize)
                 .build();
@@ -97,7 +94,6 @@ public class VideoWeeklyStatsBatch {
 
             @Override
             public VideoWeeklyStats process(VideoDailyStatsBatchDto item) throws Exception {
-                //Video video = videoRepository.batchFindById(item.getVideoId());
 
                 return VideoWeeklyStats.builder()
                         .videoId(item.getVideoId())
