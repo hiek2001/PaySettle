@@ -1,12 +1,12 @@
 package com.project.revenueservice.batch;
 
+import com.project.revenueservice.client.StreamingServiceClient;
 import com.project.revenueservice.dto.AdCountBatchDto;
 import com.project.revenueservice.entity.AdDailyRevenue;
 import com.project.revenueservice.entity.GlobalPricing;
 import com.project.revenueservice.entity.MediaTypeEnum;
 import com.project.revenueservice.repository.AdDailyRevenueRepository;
 import com.project.revenueservice.repository.GlobalPricingRepository;
-import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -19,10 +19,9 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
-import org.springframework.batch.item.database.JpaPagingItemReader;
-import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -32,8 +31,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j(topic = "광고 일별 정산 배치")
 @Configuration
@@ -41,11 +40,11 @@ import java.util.Map;
 public class AdDailyRevenueBatch {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
-    private final EntityManagerFactory entityManagerFactory;
 
     private final GlobalPricingRepository pricingRepository;
- //   private final VideoRepository videoRepository;
     private final AdDailyRevenueRepository adRevenueRepository;
+
+    private final StreamingServiceClient streamingClient;
 
     private final int chunkSize = 10;
     private MediaTypeEnum type = MediaTypeEnum.AD;
@@ -100,21 +99,25 @@ public class AdDailyRevenueBatch {
 
     @Bean
     @StepScope
-    public JpaPagingItemReader<AdCountBatchDto> getAdDailyRevenueReader(
+    public ItemReader<AdCountBatchDto> getAdDailyRevenueReader(
             @Value("#{jobParameters[currentDate]}") String currentDate) {
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter);
+        return new ItemReader<>() {
+            private Iterator<AdCountBatchDto> iterator;
 
-        return new JpaPagingItemReaderBuilder<AdCountBatchDto>()
-                .name("getAdDailyRevenueReader")
-                .entityManagerFactory(entityManagerFactory)
-                .queryString("SELECT new com.project.revenueservice.dto.AdCountBatchDto(vah.videoId, COUNT(vah.ad.id)) FROM VideoAdHistory vah "+
-                            "WHERE vah.createdAt = :currentDate GROUP BY vah.video.id"
-                )
-                .parameterValues(Map.of("currentDate", parsedDate))
-                .pageSize(chunkSize)
-                .build();
+            @Override
+            public AdCountBatchDto read() throws Exception {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                LocalDate parsedDate = LocalDate.parse(currentDate.substring(0,10), formatter);
+
+                if(iterator == null) {
+                    List<AdCountBatchDto> ads = streamingClient.getAdCountByDate(parsedDate);
+                    iterator = ads.iterator();
+                }
+
+                return iterator != null && iterator.hasNext() ? iterator.next() : null;
+            }
+        };
 
     }
 
@@ -129,7 +132,6 @@ public class AdDailyRevenueBatch {
             public AdDailyRevenue process(AdCountBatchDto item) throws Exception {
                 long totalAmount = calculateAmountForViews(priceList, item.getAdCount());
 
-                //Video video = videoRepository.batchFindById(item.getVideoId());
                 return AdDailyRevenue.builder()
                         .videoId(item.getVideoId())
                         .adAmount(totalAmount)
@@ -140,7 +142,6 @@ public class AdDailyRevenueBatch {
 
     @Bean
     public RepositoryItemWriter<AdDailyRevenue> adDailyRevenueWriter() {
-        log.info("일별 광고 정산 배치 끝---");
         return new RepositoryItemWriterBuilder<AdDailyRevenue>()
                 .repository(adRevenueRepository)
                 .methodName("save")

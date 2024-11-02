@@ -1,6 +1,5 @@
 package com.project.streamingservice.service;
 
-import com.project.common.utils.ParseRequestUtil;
 import com.project.streamingservice.dto.*;
 import com.project.streamingservice.entity.*;
 import com.project.streamingservice.exception.UserHistoryNotFoundException;
@@ -9,16 +8,14 @@ import com.project.streamingservice.repository.AdRepository;
 import com.project.streamingservice.repository.UserVideoHistoryRepository;
 import com.project.streamingservice.repository.VideoAdHistoryRepository;
 import com.project.streamingservice.repository.VideoRepository;
-import com.project.userservice.dto.UserResponseDto;
-import com.project.userservice.entity.User;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 
@@ -36,7 +33,6 @@ public class StreamingService {
 
     @Transactional
     public UserHistoryResponseDto createUserVideoHistory(Long videoId, UserRequestDto userRequestDto) {
-       // Long userId = new ParseRequestUtil().extractUserIdFromRequest(request);
 
         log.info("userId {}",userRequestDto.getId());
 
@@ -72,8 +68,6 @@ public class StreamingService {
             userVideoHistory.updateVideoStatus(VideoStatus.PLAY);
         }
 
-        //UserResponseDto userResponseDto = new UserResponseDto(userVideoHistory.getUser());
-
         return UserHistoryResponseDto.builder()
                 .userId(userRequestDto.getId())
                 .video(userVideoHistory.getVideo())
@@ -83,8 +77,6 @@ public class StreamingService {
 
     @Transactional
     public UserHistoryResponseDto updateVideoPlayback(Long videoId, VideoControlReqeustDto requestDto) {
-        //Long userId = new ParseRequestUtil().extractUserIdFromRequest(request);
-
         Video currentVideo = videoRepository.findById(videoId).orElseThrow(() ->
                 new VideoNotFoundException(messageSource.getMessage(
                         "not.found.video",
@@ -118,7 +110,6 @@ public class StreamingService {
             }
         }
 
-       // UserResponseDto userResponseDto = new UserResponseDto(userHistory.getUser());
         return UserHistoryResponseDto.builder()
                 .userId(requestDto.getUser().getId())
                 .video(userHistory.getVideo())
@@ -166,5 +157,9 @@ public class StreamingService {
 
     public List<UserVideoHistoryBatchDto> getTotalWatchTimeByVideo() {
         return userHistoryRepository.findTotalWatchTimeByVideo();
+    }
+
+    public List<AdCountBatchDto> getAdCountByDate(@RequestParam LocalDate currentDate) {
+        return videoAdHistoryRepository.getAdCountByDate(currentDate);
     }
 }
