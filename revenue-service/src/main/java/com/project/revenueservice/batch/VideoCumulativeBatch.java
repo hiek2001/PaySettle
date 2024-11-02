@@ -1,11 +1,10 @@
 package com.project.revenueservice.batch;
 
 import com.project.revenueservice.client.StreamingServiceClient;
+import com.project.revenueservice.dto.UserVideoHistoryBatchDto;
 import com.project.revenueservice.dto.VideoDto;
 import com.project.revenueservice.entity.VideoCumulativeStats;
 import com.project.revenueservice.repository.VideoCumulativeStatsRepository;
-import com.project.revenueservice.dto.UserVideoHistoryBatchDto;
-import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -19,8 +18,6 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
-import org.springframework.batch.item.database.JpaPagingItemReader;
-import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,10 +36,8 @@ public class VideoCumulativeBatch {
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
-   // private final EntityManagerFactory entityManagerFactory;
 
     private final StreamingServiceClient streamingClient;
-    //private final VideoPagingRepository videoRepository;
     private final VideoCumulativeStatsRepository videoCumulativeStatsRepository;
 
     private final int chunkSize = 10;
@@ -69,20 +64,6 @@ public class VideoCumulativeBatch {
                 .writer(watchTimeWriter())
                 .build();
     }
-
-//    @Bean
-//    public JpaPagingItemReader<UserVideoHistoryBatchDto> watchTimeReader() {
-//        log.info("watchTimeReader");
-//
-//        return new JpaPagingItemReaderBuilder<UserVideoHistoryBatchDto>()
-//                .name("watchTimeReader")
-//                .entityManagerFactory(entityManagerFactory)
-//                .queryString("SELECT new com.project.revenueservice.dto.UserVideoHistoryBatchDto(u.videoId, SUM(u.watchTime)) " +
-//                        "FROM UserVideoHistory u GROUP BY u.video.id")
-//                .pageSize(chunkSize)
-//                .build();
-//
-//    }
         @Bean
         public ItemReader<UserVideoHistoryBatchDto> watchTimeReader() {
             return new ItemReader<>() {
@@ -115,8 +96,6 @@ public class VideoCumulativeBatch {
             public VideoCumulativeStats process(UserVideoHistoryBatchDto userVideoHistory) throws Exception {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
                 LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10));
-
-                //Video video = videoRepository.findById(userVideoHistory.getVideoId());
 
                 Optional<VideoCumulativeStats> optionalStats = videoCumulativeStatsRepository.findByVideoIdAndCreatedAt(userVideoHistory.getVideoId(), parsedDate);
                 if (optionalStats.isPresent()) { // 존재하면 업데이트
@@ -160,21 +139,6 @@ public class VideoCumulativeBatch {
                 .build();
     }
 
-
-//    @Bean
-//    public RepositoryItemReader<Video> viewsReader() {
-//        log.info("views Reader");
-//
-//        return new RepositoryItemReaderBuilder<Video>()
-//                .name("viewsReader")
-//                .pageSize(chunkSize)
-//                .methodName("findAll")
-//                .repository(videoRepository)
-//                .sorts(Map.of("id", Sort.Direction.ASC))
-//                .build();
-//
-//    }
-
     @Bean
     public ItemReader<VideoDto> viewsReader() {
         return new ItemReader<>() {
@@ -212,7 +176,6 @@ public class VideoCumulativeBatch {
 
     @Bean
     public RepositoryItemWriter<VideoCumulativeStats> viewsWriter() {
-        log.info("동영상 - 누적 N일차 배치 끝---");
         return new RepositoryItemWriterBuilder<VideoCumulativeStats>()
                 .repository(videoCumulativeStatsRepository)
                 .methodName("save")
