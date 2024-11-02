@@ -137,7 +137,6 @@ public class VideoDailyRevenueBatch {
 
     @Bean
     public RepositoryItemWriter<VideoDailyRevenue> dailyRevenueWriter() {
-        log.info("동영상 일별 정산 배치 끝---");
         return new RepositoryItemWriterBuilder<VideoDailyRevenue>()
                 .repository(dailyRevenueRepository)
                 .methodName("save")

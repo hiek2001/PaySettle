@@ -99,7 +99,6 @@ public class VideoMonthlyStatsBatch {
     }
     @Bean
     public RepositoryItemWriter<VideoMonthlyStats> monthlyStatsWriter() {
-        log.info("동영상 - 월별 통계 배치 끝---");
         return new RepositoryItemWriterBuilder<VideoMonthlyStats>()
                 .repository(monthlyStatsRepository)
                 .methodName("save")
