@@ -32,4 +32,5 @@ public interface VideoDailyStatsRepository extends JpaRepository<VideoDailyStats
     // batch
     VideoDailyStats findByVideoIdAndCreatedAt(Long videoId, LocalDate createdAt);
 
+    Page<VideoDailyStats> findByCreatedAt(@Param("currentDate") LocalDate currentDate, Pageable pageable);
 }
