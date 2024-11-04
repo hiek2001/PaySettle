@@ -26,12 +26,9 @@ public class JwtFilter extends AbstractGatewayFilterFactory<JwtFilter.Config> {
     @Value("${jwt.secret.key}")
     private String jwtSecret;
 
-    private final List<String> publicPaths = Arrays.asList(
-            "/api/users/**","/api/streaming/**"
-    );
-
-    private final List<String> internalPaths = Arrays.asList(
-            "/internal/"  // 내부 호출 전용 패턴
+    private final List<String> exemptPaths = Arrays.asList(
+            "/user-service/login/kakao",
+            "/user-service/login/kakao/redirect"
     );
 
     public JwtFilter() {
@@ -44,11 +41,10 @@ public class JwtFilter extends AbstractGatewayFilterFactory<JwtFilter.Config> {
             ServerHttpRequest request = exchange.getRequest();
             ServerHttpResponse response = exchange.getResponse();
 
-            // 인증 예외 경로인지 확인
+            // 로그인 및 회원가입 경로는 필터 예외 처리
             String path = request.getURI().getPath();
-            log.info("JwtFilter is applied for path: {}", request.getURI().getPath());
-            if (publicPaths.contains(path) || isInternalPath(path)) {
-                return chain.filter(exchange); // 예외 경로는 필터 통과
+            if (exemptPaths.stream().anyMatch(path::startsWith)) {
+                return chain.filter(exchange);
             }
 
             // Authorization 헤더가 없으면 Unauthorized 처리
@@ -115,10 +111,6 @@ public class JwtFilter extends AbstractGatewayFilterFactory<JwtFilter.Config> {
     public static class Config {
         private boolean preLogger;
         private boolean postLogger;
-    }
-    // 내부 호출 확인 메서드
-    private boolean isInternalPath(String path) {
-        return internalPaths.stream().anyMatch(path::contains);
     }
 
 }
