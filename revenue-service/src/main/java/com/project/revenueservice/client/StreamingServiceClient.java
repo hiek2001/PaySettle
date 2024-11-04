@@ -30,6 +30,6 @@ public interface StreamingServiceClient {
     List<UserVideoHistoryBatchDto> getTotalWatchTimeByVideo();
 
     @GetMapping("/ad-batch/count-by-date")
-    List<AdCountBatchDto> getAdCountByDate(@RequestParam("currentDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate currentDate);
+    List<AdCountBatchDto> getAdCountByDate(@RequestParam("currentDate") LocalDate currentDate);
 
 }
