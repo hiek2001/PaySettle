@@ -39,16 +39,6 @@ INSERT INTO paysystem.video (id, duration, video_views, video_url) VALUES
                                                            (17, 9, 0, 'https://example.com/video/17'),
                                                            (18, 20, 0, 'https://example.com/video/18'),
                                                            (19, 71, 0, 'https://example.com/video/19'),
-                                                           (20, 17, 0, 'https://example.com/video/20'),
-                                                           (21, 20, 0, 'https://example.com/video/21'),
-                                                           (22, 41, 0, 'https://example.com/video/22'),
-                                                           (23, 20, 0, 'https://example.com/video/23'),
-                                                           (24, 16, 0, 'https://example.com/video/24'),
-                                                           (25, 20, 0, 'https://example.com/video/25'),
-                                                           (26, 20, 0, 'https://example.com/video/26'),
-                                                           (27, 15, 0, 'https://example.com/video/27'),
-                                                           (28, 17, 0, 'https://example.com/video/28'),
-                                                           (29, 3, 0, 'https://example.com/video/29'),
-                                                           (30, 57, 0, 'https://example.com/video/30');
+                                                           (20, 17, 0, 'https://example.com/video/20');
 
 

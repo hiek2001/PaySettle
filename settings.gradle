@@ -1,1 +1,8 @@
-rootProject.name = 'pay-system'
+rootProject.name = 'paySystem'
+
+include 'common'
+include 'eureka-server'
+include 'gateway-service'
+include 'user-service'
+include 'streaming-service'
+include 'revenue-service'

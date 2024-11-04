@@ -1,9 +1,8 @@
 package org.project.paysystem.batch;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.project.paysystem.entity.GlobalPricing;
-import org.project.paysystem.entity.MediaTypeEnum;
+import org.project.paysystem.revenue.entity.GlobalPricing;
+import org.project.paysystem.revenue.entity.MediaTypeEnum;
 
 import java.util.List;
 
