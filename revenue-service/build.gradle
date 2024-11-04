@@ -28,14 +28,19 @@ dependencies {
 
 	implementation "org.springframework.cloud:spring-cloud-starter-openfeign"
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	// circuit breaker
+	implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
 	// validation
 	implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: '3.0.2'
 	// spring batch
 	implementation 'org.springframework.boot:spring-boot-starter-batch'
 
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
 }
 
 dependencyManagement {
