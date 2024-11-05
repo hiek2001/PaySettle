@@ -21,6 +21,8 @@ public class VideoStatsJobFlow {
     private final Job videoDailyRevenueJob;
     private final Job adDailyRevenueJob;
 
+    // Flow에 맞는 배치 잡 순차적으로 진행
+    // 누적 N일차 -> 일별 통계 (-> 매주 일: 주별 통계 -> 매달 1일: 월별 통계)-> 영상 일별 정산 -> 광고 일별 정산
     @Bean
     public Job combinedJob() {
         return new JobBuilder("combinedJob", jobRepository)
@@ -34,6 +36,7 @@ public class VideoStatsJobFlow {
                 .build();
     }
 
+    // 누적 N일차 job flow
     @Bean
     public Flow cumulativeJobFlow(Job videoCumulativeJob) {
         return new FlowBuilder<Flow>("videoCumulativeJobFlow")
@@ -43,6 +46,7 @@ public class VideoStatsJobFlow {
                 .build();
     }
 
+    // 일별 통계 job flow
     @Bean
     public Flow dailyStatsJobFlow(Job videoDailyStatsJob) {
         return new FlowBuilder<Flow>("dailyStatsJobFlow")
@@ -52,6 +56,7 @@ public class VideoStatsJobFlow {
                 .build();
     }
 
+    // 영상 일별 정산 job flow
     @Bean
     public Flow revenueJobFlow(Job videoDailyRevenueJob) {
         return new FlowBuilder<Flow>("revenueJobFlow")
@@ -61,6 +66,7 @@ public class VideoStatsJobFlow {
                 .build();
     }
 
+    // 광고 일별 정산 job flow
     @Bean
     public Flow adRevenueJobFlow(Job adDailyRevenueJob) {
         return new FlowBuilder<Flow>("adRevenueJobFlow")

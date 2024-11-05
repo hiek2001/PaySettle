@@ -6,16 +6,11 @@ import lombok.Getter;
 @Getter
 public class VideoDto {
     private Long id;
-    private Long duration;
-    private Long views;
-    private String videoUrl;
+    private Long videoViews;
 
     @Builder
-    public VideoDto(Long id, Long duration, Long views, String videoUrl) {
+    public VideoDto(Long id, Long videoViews) {
         this.id = id;
-        this.duration = duration;
-        this.views = views;
-        this.videoUrl = videoUrl;
-
+        this.videoViews = videoViews;
     }
 }

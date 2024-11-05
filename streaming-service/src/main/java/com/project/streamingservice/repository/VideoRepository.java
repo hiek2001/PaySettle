@@ -16,6 +16,6 @@ public interface VideoRepository extends JpaRepository<Video, Long> {
     @Query("SELECT v FROM Video v WHERE v.id = :id")
     Video batchFindById(@Param("id") long id);
 
-    @Query("SELECT new com.project.streamingservice.dto.VideoDto(v.id, v.duration, v.videoViews, v.videoUrl) FROM Video v")
+    @Query("SELECT new com.project.streamingservice.dto.VideoDto(v.id, v.videoViews) FROM Video v")
     List<VideoDto> batchFindAll();
 }

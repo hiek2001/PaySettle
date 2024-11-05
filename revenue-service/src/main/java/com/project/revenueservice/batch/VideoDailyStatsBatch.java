@@ -62,138 +62,7 @@ public class VideoDailyStatsBatch {
                 .build();
     }
 
-    // watchtime tasklet
-    @Bean
-    public Step videoWatchTimeTaskletStep() {
-        return new StepBuilder("videoWatchTimeTaskletStep", jobRepository)
-                .tasklet(videoWatchTimeTasklet(), transactionManager)
-                .listener(promotionListener())
-                .build();
-    }
-
-    @Bean
-    public ExecutionContextPromotionListener promotionListener() {
-        ExecutionContextPromotionListener listener = new ExecutionContextPromotionListener();
-        listener.setKeys(new String[]{"videoWatchTimeList"}); // 자동으로 승격시킬 키 목록
-        return listener;
-    }
-
-
-    @Bean
-    public Tasklet videoWatchTimeTasklet() {
-        return (contribution, chunkContext) -> {
-            List<UserVideoHistoryBatchDto> videoWatchTimeList = streamingClient.getVideoByDay();
-            ExecutionContext stepContext = chunkContext.getStepContext().getStepExecution().getExecutionContext();
-            stepContext.put("videoWatchTimeList", videoWatchTimeList);
-            return RepeatStatus.FINISHED;
-        };
-    }
-
-    // 일별 재생 시간
-    @Bean
-    public Step calculateDiffWatchTimeStep() throws ParseException {
-        log.info("calculateDiffWatchTimeStep");
-
-        return new StepBuilder("calculateDiffWatchTimeStep", jobRepository)
-                .<VideoCumulativeStats, VideoDailyStats>chunk(chunkSize, transactionManager)
-                .reader(getPreviousDayWatchTimeCumulativeReader(null))
-                .processor(watchTimeDiffProcessor(null, null))
-                .writer(watchTimeDiffWriter())
-                .build();
-    }
-
-    // 일별 (N-1일차 누적 재생시간 : 누적 테이블에서 N-1일차 누적 재생시간 가져오기)
-    @Bean
-    @StepScope
-    public RepositoryItemReader<VideoCumulativeStats> getPreviousDayWatchTimeCumulativeReader(
-            @Value("#{jobParameters[currentDate]}") String currentDate) throws ParseException {
-
-        // String을 Date로 변환
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(1);
-
-        // 동영상 ID 리스트 가져오기
-        List<Long> videoIdList = streamingClient.getLatestVideos();
-
-        return new RepositoryItemReaderBuilder<VideoCumulativeStats>()
-                .name("getPreviousDayWatchTimeCumulativeReader")
-                .repository(videoCumulativeStatsRepository)
-                .methodName("findByCreatedAtAndVideoIn")
-                .arguments(parsedDate, videoIdList)
-                .pageSize(chunkSize)
-                .sorts(Map.of("id", Sort.Direction.ASC))
-                .build();
-
-    }
-
-    // 재생시간 차이 계산, 일별 재생 시간을 업데이트
-    @Bean
-    @StepScope
-    public ItemProcessor<VideoCumulativeStats, VideoDailyStats> watchTimeDiffProcessor(
-            @Value("#{jobExecutionContext[videoWatchTimeList]}") List<UserVideoHistoryBatchDto> videoWatchTimeList,
-            @Value("#{jobParameters[currentDate]}") String currentDate) {
-
-        return new ItemProcessor<VideoCumulativeStats, VideoDailyStats>() {
-            private Iterator<Long> idIterator;
-
-            @Override
-            public VideoDailyStats process(VideoCumulativeStats item) throws Exception {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-                LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter);
-
-                if(idIterator == null) {
-                    // 재생 내역이 현재 값이기 때문에 동영상 ID 기준을 해당 테이블로 잡음
-                    Set<Long> uniqueIds = new HashSet<>();
-                    for(UserVideoHistoryBatchDto dto : videoWatchTimeList) {
-                        uniqueIds.add(dto.getVideoId());
-                    }
-                    uniqueIds.add(item.getVideoId());
-                    idIterator = uniqueIds.iterator();
-                }
-
-                if (!idIterator.hasNext()) {
-                    return null;
-                }
-
-                // 다음 Video ID 가져오기
-                Long targetVideoId = idIterator.next();
-                for (UserVideoHistoryBatchDto dto : videoWatchTimeList) {
-                    if (dto.getVideoId().equals(targetVideoId)) {
-                        long watchTimeDiff = dto.getWatchTime() - item.getCumulativeWatchTime();
-
-                        VideoDailyStats dailyStats = dailyStatsRepository.findByVideoIdAndCreatedAt(targetVideoId, parsedDate);
-                        dailyStats.updateDailyWatchTime(watchTimeDiff);
-                        return dailyStats;
-                    }
-                }
-
-                return null; // 매칭되는 것이 없다면 null을 반환하여 넘어가게 설정
-            }
-        };
-    }
-
-    @Bean
-    public RepositoryItemWriter<VideoDailyStats> watchTimeDiffWriter() {
-        return new RepositoryItemWriterBuilder<VideoDailyStats>()
-                .repository(dailyStatsRepository)
-                .methodName("save")
-                .build();
-    }
-
-    // 일별 조회수
-    @Bean
-    public Step calculateDiffViewsStep() throws ParseException {
-        log.info("calculateDiffViewsStep");
-
-        return new StepBuilder("calculateDiffViewsStep", jobRepository)
-                .<VideoCumulativeStats, VideoDailyStats>chunk(chunkSize, transactionManager)
-                .reader(getPreviousDayCumulativeReader(null))
-                .processor(viewsDiffProcessor(null))
-                .writer(viewsDiffWriter())
-                .build();
-    }
-
-    // views tasklet
+    // videoViewsTaskletStep : 동영상 목록(동영상 ID, 조회수) 조회하여 Step ExecutionContext에 저장
     @Bean
     public Step videoViewsTaskletStep() {
         return new StepBuilder("videoViewsTaskletStep", jobRepository)
@@ -218,6 +87,19 @@ public class VideoDailyStatsBatch {
             stepContext.put("videoViewsList", videoViewsList);
             return RepeatStatus.FINISHED;
         };
+    }
+
+    // calculateDiffViewsStep : 누적 N일차 조회수 - 누적 N-1일차 조회수를 통해 일별 조회수 계산하여 업데이트
+    @Bean
+    public Step calculateDiffViewsStep() throws ParseException {
+        log.info("calculateDiffViewsStep");
+
+        return new StepBuilder("calculateDiffViewsStep", jobRepository)
+                .<VideoCumulativeStats, VideoDailyStats>chunk(chunkSize, transactionManager)
+                .reader(getPreviousDayCumulativeReader(null))
+                .processor(viewsDiffProcessor(null))
+                .writer(viewsDiffWriter())
+                .build();
     }
 
     // 일별 (N-1일차 누적 조회수 : 누적 테이블에서 N-1일차 누적 조회수 가져오기)
@@ -253,7 +135,7 @@ public class VideoDailyStatsBatch {
 
             @Override
             public VideoDailyStats process(VideoCumulativeStats item) throws Exception {
-                if(idIterator == null) {
+                if(idIterator == null) { // videoId 기준으로 order by를 사용하지 않기 위한 것
                     Set<Long> uniqueIds = new HashSet<>();
                     for(VideoDto dto : videoViewsList) {
                         uniqueIds.add(dto.getId());
@@ -269,12 +151,12 @@ public class VideoDailyStatsBatch {
                 Long targetVideoId = idIterator.next();
                 for(VideoDto dto : videoViewsList) {
                     if(dto.getId().equals(targetVideoId)) {
-                        long diff = dto.getViews() - item.getCumulativeViews();
+                        long diff = dto.getViews() - item.getCumulativeViews(); // 일별 조회수 계산
 
                         return VideoDailyStats.builder()
                                 .videoId(dto.getId())
                                 .dailyViews(diff)
-                                .dailyWatchTime(0)
+                                .dailyWatchTime(0) // 재생 시간은 아직 알지 못하므로 0으로 생성
                                 .build();
                     }
                 }
@@ -286,6 +168,124 @@ public class VideoDailyStatsBatch {
 
     @Bean
     public RepositoryItemWriter<VideoDailyStats> viewsDiffWriter() {
+        return new RepositoryItemWriterBuilder<VideoDailyStats>()
+                .repository(dailyStatsRepository)
+                .methodName("save")
+                .build();
+    }
+
+    // videoWatchTimeTaskletStep : 재생내역에서 동영상 별로 재생 시간 합산(SUM, GROUP BY)한 후 조회하여 Step ExecutionContext에 저장
+    @Bean
+    public Step videoWatchTimeTaskletStep() {
+        return new StepBuilder("videoWatchTimeTaskletStep", jobRepository)
+                .tasklet(videoWatchTimeTasklet(), transactionManager)
+                .listener(promotionListener())
+                .build();
+    }
+
+    @Bean
+    public ExecutionContextPromotionListener promotionListener() {
+        ExecutionContextPromotionListener listener = new ExecutionContextPromotionListener();
+        listener.setKeys(new String[]{"videoWatchTimeList"}); // 자동으로 승격시킬 키 목록
+        return listener;
+    }
+
+
+    @Bean
+    public Tasklet videoWatchTimeTasklet() {
+        return (contribution, chunkContext) -> {
+            List<UserVideoHistoryBatchDto> videoWatchTimeList = streamingClient.getVideoByDay();
+            ExecutionContext stepContext = chunkContext.getStepContext().getStepExecution().getExecutionContext();
+            stepContext.put("videoWatchTimeList", videoWatchTimeList);
+            return RepeatStatus.FINISHED;
+        };
+    }
+
+    // calculateDiffWatchTimeStep : 누적 N일차 재생시간 - 누적 N-1일차 재생시간을 통해 일별 재생시간 계산하여 업데이트
+    @Bean
+    public Step calculateDiffWatchTimeStep() throws ParseException {
+        log.info("calculateDiffWatchTimeStep");
+
+        return new StepBuilder("calculateDiffWatchTimeStep", jobRepository)
+                .<VideoCumulativeStats, VideoDailyStats>chunk(chunkSize, transactionManager)
+                .reader(getPreviousDayWatchTimeCumulativeReader(null))
+                .processor(watchTimeDiffProcessor(null, null))
+                .writer(watchTimeDiffWriter())
+                .build();
+    }
+
+    // 일별 (N-1일차 누적 재생시간 : 누적 테이블에서 N-1일차 누적 재생시간 가져오기)
+    @Bean
+    @StepScope
+    public RepositoryItemReader<VideoCumulativeStats> getPreviousDayWatchTimeCumulativeReader(
+            @Value("#{jobParameters[currentDate]}") String currentDate) throws ParseException { // 스케줄링 실행할 때 입력받은 날짜 전달 받음
+
+        // String을 Date로 변환
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(1);
+
+        // 동영상 ID 리스트 가져오기
+        List<Long> videoIdList = streamingClient.getLatestVideos();
+
+        return new RepositoryItemReaderBuilder<VideoCumulativeStats>()
+                .name("getPreviousDayWatchTimeCumulativeReader")
+                .repository(videoCumulativeStatsRepository)
+                .methodName("findByCreatedAtAndVideoIn")
+                .arguments(parsedDate, videoIdList)
+                .pageSize(chunkSize)
+                .sorts(Map.of("id", Sort.Direction.ASC))
+                .build();
+
+    }
+
+    // 재생시간 차이 계산, 일별 재생 시간을 업데이트
+    @Bean
+    @StepScope
+    public ItemProcessor<VideoCumulativeStats, VideoDailyStats> watchTimeDiffProcessor(
+            @Value("#{jobExecutionContext[videoWatchTimeList]}") List<UserVideoHistoryBatchDto> videoWatchTimeList, // step executionContext를 job executionContext로 승격시켜 전달 받음
+            @Value("#{jobParameters[currentDate]}") String currentDate) {
+
+        return new ItemProcessor<VideoCumulativeStats, VideoDailyStats>() {
+            private Iterator<Long> idIterator;
+
+            @Override
+            public VideoDailyStats process(VideoCumulativeStats item) throws Exception {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter);
+
+                if(idIterator == null) {
+                    // 재생 내역이 현재 값이기 때문에 동영상 ID 기준을 해당 테이블로 잡음
+                    Set<Long> uniqueIds = new HashSet<>();
+                    for(UserVideoHistoryBatchDto dto : videoWatchTimeList) {
+                        uniqueIds.add(dto.getVideoId());
+                    }
+                    uniqueIds.add(item.getVideoId());
+                    idIterator = uniqueIds.iterator();
+                }
+
+                if (!idIterator.hasNext()) {
+                    return null;
+                }
+
+                // 다음 Video ID 가져오기
+                Long targetVideoId = idIterator.next();
+                for (UserVideoHistoryBatchDto dto : videoWatchTimeList) {
+                    if (dto.getVideoId().equals(targetVideoId)) {
+                        long watchTimeDiff = dto.getWatchTime() - item.getCumulativeWatchTime(); // 일별 재생 시간 계산
+
+                        VideoDailyStats dailyStats = dailyStatsRepository.findByVideoIdAndCreatedAt(targetVideoId, parsedDate);
+                        dailyStats.updateDailyWatchTime(watchTimeDiff);
+                        return dailyStats;
+                    }
+                }
+
+                return null; // 매칭되는 것이 없다면 null을 반환하여 넘어가게 설정
+            }
+        };
+    }
+
+    @Bean
+    public RepositoryItemWriter<VideoDailyStats> watchTimeDiffWriter() {
         return new RepositoryItemWriterBuilder<VideoDailyStats>()
                 .repository(dailyStatsRepository)
                 .methodName("save")

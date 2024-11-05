@@ -52,7 +52,63 @@ public class VideoCumulativeBatch {
                 .build();
     }
 
-    // 누적 재생 시간
+    // viewStep : 동영상 별로 동영상 조회수 집계할 누적 N일차 VideoCumulativeStats 객체 생성
+    @Bean
+    public Step viewsStep() {
+        log.info("views Step");
+
+        return new StepBuilder("viewsStep", jobRepository)
+                .<VideoDto, VideoCumulativeStats> chunk(chunkSize, transactionManager)
+                .reader(viewsReader())
+                .processor(viewsProcessor())
+                .writer(viewsWriter())
+                .build();
+    }
+
+    @Bean
+    public ItemReader<VideoDto> viewsReader() {
+        return new ItemReader<>() {
+            private Iterator<VideoDto> iterator;
+
+            @Override
+            public VideoDto read() throws Exception {
+                if(iterator == null) {
+                    List<VideoDto> videos = streamingClient.getAllVideos(); // 스트리밍 서비스의 동영상 데이터 조회 API 호출
+                    iterator = videos.iterator();
+                }
+
+                return iterator != null && iterator.hasNext() ? iterator.next() : null;
+            }
+        };
+
+    }
+
+    @Bean
+    public ItemProcessor<VideoDto, VideoCumulativeStats> viewsProcessor() {
+        log.info("view Processor");
+
+        return new ItemProcessor<VideoDto, VideoCumulativeStats>() {
+
+            @Override
+            public VideoCumulativeStats process(VideoDto item) throws Exception {
+                return VideoCumulativeStats.builder()
+                        .videoId(item.getId())
+                        .cumulativeViews(item.getViews())
+                        .cumulativeWatchTime(0)
+                        .build();
+            }
+        };
+    }
+
+    @Bean
+    public RepositoryItemWriter<VideoCumulativeStats> viewsWriter() {
+        return new RepositoryItemWriterBuilder<VideoCumulativeStats>()
+                .repository(videoCumulativeStatsRepository)
+                .methodName("save")
+                .build();
+    }
+
+    // watchTimeStep : 재생 내역을 바탕으로 동영상 별 재생 시간을 집계할 누적 N일차 VideoCumulativeStats 객체 생성
     @Bean
     public Step watchTimeStep() {
         log.info("watchTimeStep");
@@ -72,7 +128,7 @@ public class VideoCumulativeBatch {
                 @Override
                 public UserVideoHistoryBatchDto read() throws Exception {
                     if(iterator == null) {
-                        List<UserVideoHistoryBatchDto> videos = streamingClient.getTotalWatchTimeByVideo();
+                        List<UserVideoHistoryBatchDto> videos = streamingClient.getTotalWatchTimeByVideo(); // 스트리밍 서비스의 동영상 재생 내역 조회 API 호출
                         iterator = videos.iterator();
                     }
 
@@ -124,61 +180,5 @@ public class VideoCumulativeBatch {
                 .methodName("save")
                 .build();
 
-    }
-
-    // 누적 조회수
-    @Bean
-    public Step viewsStep() {
-        log.info("views Step");
-
-        return new StepBuilder("viewsStep", jobRepository)
-                .<VideoDto, VideoCumulativeStats> chunk(chunkSize, transactionManager)
-                .reader(viewsReader())
-                .processor(viewsProcessor())
-                .writer(viewsWriter())
-                .build();
-    }
-
-    @Bean
-    public ItemReader<VideoDto> viewsReader() {
-        return new ItemReader<>() {
-            private Iterator<VideoDto> iterator;
-
-            @Override
-            public VideoDto read() throws Exception {
-                if(iterator == null) {
-                    List<VideoDto> videos = streamingClient.getAllVideos();
-                    iterator = videos.iterator();
-                }
-
-                return iterator != null && iterator.hasNext() ? iterator.next() : null;
-            }
-        };
-
-    }
-
-    @Bean
-    public ItemProcessor<VideoDto, VideoCumulativeStats> viewsProcessor() {
-        log.info("view Processor");
-
-        return new ItemProcessor<VideoDto, VideoCumulativeStats>() {
-
-            @Override
-            public VideoCumulativeStats process(VideoDto item) throws Exception {
-                return VideoCumulativeStats.builder()
-                        .videoId(item.getId())
-                        .cumulativeViews(item.getViews())
-                        .cumulativeWatchTime(0)
-                        .build();
-            }
-        };
-    }
-
-    @Bean
-    public RepositoryItemWriter<VideoCumulativeStats> viewsWriter() {
-        return new RepositoryItemWriterBuilder<VideoCumulativeStats>()
-                .repository(videoCumulativeStatsRepository)
-                .methodName("save")
-                .build();
     }
 }

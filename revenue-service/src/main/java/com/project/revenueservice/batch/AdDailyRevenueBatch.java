@@ -59,7 +59,7 @@ public class AdDailyRevenueBatch {
                 .build();
     }
 
-    // tasklet
+    // globalPricingTaskletStep : 광고 조회수별 단가 금액표 db에서 조회하여 Step ExecutionContext에 저장
     @Bean
     public Step globalPricingTaskletStep() {
         return new StepBuilder("globalPricingTaskletStep", jobRepository)
@@ -85,7 +85,7 @@ public class AdDailyRevenueBatch {
         };
     }
 
-    // Ad daily revenue step
+    // adDailyRevenueStep : 동영상 별로 삽입된 광고 갯수(=조회수)를 기반으로 정산 금액 계산하여 저장
     @Bean
     public Step adDailyRevenueStep() throws ParseException {
 
@@ -111,7 +111,7 @@ public class AdDailyRevenueBatch {
                 LocalDate parsedDate = LocalDate.parse(currentDate.substring(0,10), formatter);
 
                 if(iterator == null) {
-                    List<AdCountBatchDto> ads = streamingClient.getAdCountByDate(parsedDate);
+                    List<AdCountBatchDto> ads = streamingClient.getAdCountByDate(parsedDate); // 스트리밍 서비스의 광고 목록에서 특정 날짜에 해당하는 데이터 조회
                     iterator = ads.iterator();
                 }
 
@@ -130,7 +130,7 @@ public class AdDailyRevenueBatch {
 
             @Override
             public AdDailyRevenue process(AdCountBatchDto item) throws Exception {
-                long totalAmount = calculateAmountForViews(priceList, item.getAdCount());
+                long totalAmount = calculateAmountForViews(priceList, item.getAdCount()); // 정산 금액 계산
 
                 return AdDailyRevenue.builder()
                         .videoId(item.getVideoId())
@@ -148,6 +148,7 @@ public class AdDailyRevenueBatch {
                 .build();
     }
 
+    // 정산 금액 계산
     public long calculateAmountForViews(List<GlobalPricing> priceList, long views) {
         long totalAmount = 0;
         long remainingViews = views;

@@ -60,7 +60,7 @@ public class VideoDailyRevenueBatch {
                 .build();
     }
 
-    // tasklet
+    // globalPricingTaskletStep : 영상 조회수별 단가 금액표 db에서 조회하여 Step ExecutionContext에 저장
     @Bean
     public Step globalPricingTaskletStep() {
         return new StepBuilder("globalPricingTaskletStep", jobRepository)
@@ -86,7 +86,7 @@ public class VideoDailyRevenueBatch {
         };
     }
 
-    // Video daily revenue step
+    // dailyRevenueStep : 일별 영상 조회수 별 정산 금액 계산하여 저장
     @Bean
     public Step dailyRevenueStep() throws ParseException {
         log.info("dailyRevenueStep");
@@ -125,7 +125,7 @@ public class VideoDailyRevenueBatch {
 
             @Override
             public VideoDailyRevenue process(VideoDailyStats item) throws Exception {
-                long totalAmount = calculateAmountForViews(priceList, item.getDailyViews());
+                long totalAmount = calculateAmountForViews(priceList, item.getDailyViews()); // 정산 금액 계산
 
                 return VideoDailyRevenue.builder()
                         .videoId(item.getVideoId())
@@ -143,6 +143,7 @@ public class VideoDailyRevenueBatch {
                 .build();
     }
 
+    // 정산 금액 계산
     public long calculateAmountForViews(List<GlobalPricing> priceList, long views) {
         long totalAmount = 0;
         long remainingViews = views;

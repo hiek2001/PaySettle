@@ -19,9 +19,6 @@ public class VideoCumulativeStats {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name="video_id")
-//    private Video video;
     private Long videoId;
 
     private long cumulativeViews; // 누적 조회수 , 집계 데이터로써 관리하기 위해 별도로 사용
