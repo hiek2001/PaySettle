@@ -46,7 +46,9 @@ public class AdDailyRevenueBatch {
 
     private final StreamingServiceClient streamingClient;
 
-    private final int chunkSize = 10;
+    @Value("${spring.batch.chunksize}")
+    private int chunkSize;
+
     private MediaTypeEnum type = MediaTypeEnum.AD;
 
     @Bean

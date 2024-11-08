@@ -30,8 +30,6 @@ public class StatsService {
 
     private final LastUpdatedStatsUtil lastUpdatedStatsUtil;
 
-
-
     public Top5ResponseDto top5ViewsVideo(Top5RequestDto requestDto) {
         String currentDate = requestDto.getCurrentDate() == null ? String.valueOf(LocalDate.now()) : requestDto.getCurrentDate();
         String period = requestDto.getPeriod();

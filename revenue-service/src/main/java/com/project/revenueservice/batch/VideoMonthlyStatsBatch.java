@@ -34,10 +34,10 @@ public class VideoMonthlyStatsBatch {
     private final PlatformTransactionManager transactionManager;
     private final EntityManagerFactory entityManagerFactory;
 
-    //private final VideoRepository videoRepository;
     private final VideoMonthlyStatsRepository monthlyStatsRepository;
 
-    private final int chunkSize = 10;
+    @Value("${spring.batch.chunksize}")
+    private int chunkSize;
 
     @Bean
     public Job videoMonthlyStatsJob() {

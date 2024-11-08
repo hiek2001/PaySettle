@@ -34,6 +34,9 @@ public class VideoCumulativeStats {
         this.createdAt = LocalDate.now();
     }
 
+    public VideoCumulativeStats(long l, int i) {
+    }
+
     // Setter
     public void updateCumulativeWatchTime(long watchTime) {
         this.cumulativeWatchTime = watchTime;
