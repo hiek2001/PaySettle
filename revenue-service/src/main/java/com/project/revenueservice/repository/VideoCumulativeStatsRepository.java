@@ -12,8 +12,5 @@ import java.util.Optional;
 
 public interface VideoCumulativeStatsRepository extends JpaRepository<VideoCumulativeStats, Long> {
     // batch
-    @Query("SELECT vcs FROM VideoCumulativeStats vcs WHERE vcs.createdAt = :parsedDate AND vcs.videoId IN :videoList")
-    Page<VideoCumulativeStats> findByCreatedAtAndVideoIn(LocalDate parsedDate, List<Long> videoList, Pageable pageable);
-
     Optional<VideoCumulativeStats> findByVideoIdAndCreatedAt(Long id, LocalDate parsedDate);
 }

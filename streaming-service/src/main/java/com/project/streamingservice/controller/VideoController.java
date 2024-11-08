@@ -47,6 +47,11 @@ public class VideoController {
         return streamingService.getAllVideos();
     }
 
+    @GetMapping("/lastId")
+    public List<VideoDto> getVideoAfterId(@RequestParam("lastId") long lastId, @RequestParam("pageSize") int pageSize) {
+        return streamingService.getVideoAfterId(lastId, pageSize);
+    }
+
     @GetMapping("/all/Id")
     public List<Long> getAllVideoIds() {
         return streamingService.getAllVideoIds();

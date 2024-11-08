@@ -1,5 +1,6 @@
 package com.project.revenueservice.batch;
 
+import com.project.revenueservice.batch.listener.ChunkExecutionTimeListener;
 import com.project.revenueservice.client.StreamingServiceClient;
 import com.project.revenueservice.dto.UserVideoHistoryBatchDto;
 import com.project.revenueservice.dto.VideoDto;
@@ -9,8 +10,8 @@ import com.project.revenueservice.repository.VideoCumulativeStatsRepository;
 import com.project.revenueservice.repository.VideoDailyStatsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
+import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.listener.ExecutionContextPromotionListener;
@@ -19,18 +20,24 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ParseException;
 import org.springframework.batch.item.data.RepositoryItemReader;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
+import org.springframework.batch.item.database.JdbcPagingItemReader;
+import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.text.ParseException;
+import javax.sql.DataSource;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -48,120 +55,139 @@ public class VideoDailyStatsBatch {
 
     private final StreamingServiceClient streamingClient;
 
-    private int chunkSize = 10;
+    private final ChunkExecutionTimeListener chunkExecutionListener;
+
+    private final DataSource dataSource;
+
+    @Value("${spring.batch.chunksize}")
+    private int chunkSize;
+
+
 
     @Bean
-    public Job videoDailyStatsJob() throws ParseException {
+    public Job videoDailyStatsJob() throws Exception {
         log.info("동영상 - 일별 통계 배치 시작");
 
         return new JobBuilder("videoDailyStatsJob", jobRepository)
-                .start(videoViewsTaskletStep())
+                .start(calculateDiffViewsStep())
                 .next(calculateDiffViewsStep())
                 .next(videoWatchTimeTaskletStep())
                 .next(calculateDiffWatchTimeStep())
                 .build();
     }
 
-    // videoViewsTaskletStep : 동영상 목록(동영상 ID, 조회수) 조회하여 Step ExecutionContext에 저장
+    // 일별 조회수
     @Bean
-    public Step videoViewsTaskletStep() {
-        return new StepBuilder("videoViewsTaskletStep", jobRepository)
-                .tasklet(videoViewsTasklet(), transactionManager)
-                .listener(viewsPromotionListener())
+    public Step calculateDiffViewsStep() throws Exception {
+        log.info("calculateDiffViewsStep");
+        return new StepBuilder("calculateDiffViewsStep", jobRepository)
+                .<Pair<VideoDto, VideoCumulativeStats>, VideoDailyStats>chunk(chunkSize, transactionManager)
+                .reader(multiReader(null))
+                .processor(viewsDiffProcessor())
+                .writer(viewsDiffWriter())
+                .listener((StepExecutionListener) chunkExecutionListener)
+                .listener((ItemReadListener<? super Pair<VideoDto, VideoCumulativeStats>>) chunkExecutionListener)
+                .listener((ItemProcessListener<? super Pair<VideoDto, VideoCumulativeStats>, ? super VideoDailyStats>) chunkExecutionListener)
                 .build();
     }
-
+    // 일별 (N일차 누적 조회수 : 현재 누적 조회수 필요)
     @Bean
-    public ExecutionContextPromotionListener viewsPromotionListener() {
-        ExecutionContextPromotionListener listener = new ExecutionContextPromotionListener();
-        listener.setKeys(new String[]{"videoViewsList"}); // 자동으로 승격시킬 키 목록
-        return listener;
-    }
+    public ItemReader<VideoDto> viewsReader() {
+        return new ItemReader<>() {
+            private Iterator<VideoDto> iterator;
+            private long lastId = 0;
 
+            @Override
+            public VideoDto read() throws Exception {
+                if(iterator == null || !iterator.hasNext()) {
 
-    @Bean
-    public Tasklet videoViewsTasklet() {
-        return (contribution, chunkContext) -> {
-            List<VideoDto> videoViewsList = streamingClient.getAllVideos();
-            ExecutionContext stepContext = chunkContext.getStepContext().getStepExecution().getExecutionContext();
-            stepContext.put("videoViewsList", videoViewsList);
-            return RepeatStatus.FINISHED;
+                    // zero-offSet 기법으로 데이터 요청 (lastId 이후의 데이터)
+                    List<VideoDto> videos = streamingClient.getVideosAfterId(lastId, chunkSize);
+
+                    if(videos.isEmpty()) { // 더 이상 가져올 데이터가 없으면 종료
+                        return null;
+                    }
+
+                    iterator = videos.iterator();
+
+                    lastId = videos.get(videos.size() - 1).getId();
+                }
+                return iterator != null && iterator.hasNext() ? iterator.next() : null;
+            }
         };
     }
-
-    // calculateDiffViewsStep : 누적 N일차 조회수 - 누적 N-1일차 조회수를 통해 일별 조회수 계산하여 업데이트
-    @Bean
-    public Step calculateDiffViewsStep() throws ParseException {
-        log.info("calculateDiffViewsStep");
-
-        return new StepBuilder("calculateDiffViewsStep", jobRepository)
-                .<VideoCumulativeStats, VideoDailyStats>chunk(chunkSize, transactionManager)
-                .reader(getPreviousDayCumulativeReader(null))
-                .processor(viewsDiffProcessor(null))
-                .writer(viewsDiffWriter())
-                .build();
-    }
-
     // 일별 (N-1일차 누적 조회수 : 누적 테이블에서 N-1일차 누적 조회수 가져오기)
     @Bean
     @StepScope
-    public RepositoryItemReader<VideoCumulativeStats> getPreviousDayCumulativeReader(@Value("#{jobParameters[currentDate]}") String currentDate) throws ParseException {
+    public JdbcPagingItemReader<VideoCumulativeStats> getPreviousDayCumulativeReader(@Value("#{jobParameters[currentDate]}") String currentDate) throws Exception {
         // String을 Date로 변환
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(1);
+        // LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(1);
+        LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(3); // test : 2024-11-05
 
-        // 동영상 ID 리스트 가져오기
-        List<Long> videoIdList = streamingClient.getAllVideoIds();
+       JdbcPagingItemReader<VideoCumulativeStats> reader = new JdbcPagingItemReader<>();
+       reader.setDataSource(dataSource);
+       reader.setFetchSize(chunkSize);
 
+        // RowMapper 설정
+       reader.setRowMapper(new BeanPropertyRowMapper<>(VideoCumulativeStats.class));
 
-        return new RepositoryItemReaderBuilder<VideoCumulativeStats>()
-                .name("getPreviousDayCumulativeReader")
-                .repository(videoCumulativeStatsRepository)
-                .methodName("findByCreatedAtAndVideoIn")
-                .arguments(parsedDate, videoIdList)
-                .pageSize(chunkSize)
-                .sorts(Map.of("id", Sort.Direction.ASC))
-                .build();
+        // 쿼리 프로바이더 설정
+        SqlPagingQueryProviderFactoryBean queryProvider = new SqlPagingQueryProviderFactoryBean();
+        queryProvider.setDataSource(dataSource);
+        queryProvider.setSelectClause("SELECT DISTINCT video_id, created_at, cumulative_views, cumulative_watch_time, id");
+        queryProvider.setFromClause("FROM video_cumulative_stats");
+        queryProvider.setWhereClause("WHERE created_at = :createdAt");
+        queryProvider.setSortKey("id");
 
+        // QueryProvider를 JdbcPagingItemReader에 설정
+        reader.setQueryProvider(queryProvider.getObject());
+
+        // 파라미터 값 설정
+        MapSqlParameterSource parameterValues = new MapSqlParameterSource();
+        parameterValues.addValue("createdAt", parsedDate);
+        reader.setParameterValues(parameterValues.getValues());
+
+        return reader;
+
+    }
+
+    @Bean
+    @StepScope
+    public ItemReader<Pair<VideoDto, VideoCumulativeStats>> multiReader(@Value("#{jobParameters[currentDate]}") String currentDate) throws Exception {
+        return new ItemReader<Pair<VideoDto, VideoCumulativeStats>>() {
+
+            @Override
+            public Pair<VideoDto, VideoCumulativeStats> read() throws Exception {
+                VideoDto videoDto = viewsReader().read();
+                VideoCumulativeStats cumulativeStats = getPreviousDayCumulativeReader(currentDate).read();
+
+                // 같은 videoId가 존재하는 경우 Pair로 묶어서 반환
+                if (videoDto != null && cumulativeStats != null) {
+                    return Pair.of(videoDto, cumulativeStats);
+                }
+
+                // 해당 videoId에 매칭되는 데이터가 없으면 null 반환
+                return null;
+            }
+        };
     }
 
     // 조회수 차이 계산
     @Bean
     @StepScope
-    public ItemProcessor<VideoCumulativeStats, VideoDailyStats> viewsDiffProcessor(
-            @Value("#{jobExecutionContext[videoViewsList]}") List<VideoDto> videoViewsList) {
-        return new ItemProcessor<VideoCumulativeStats, VideoDailyStats>() {
-            private Iterator<Long> idIterator;
-
+    public ItemProcessor<Pair<VideoDto, VideoCumulativeStats>, VideoDailyStats> viewsDiffProcessor() {
+        return new ItemProcessor<Pair<VideoDto, VideoCumulativeStats>, VideoDailyStats>() {
             @Override
-            public VideoDailyStats process(VideoCumulativeStats item) throws Exception {
-                if(idIterator == null) { // videoId 기준으로 order by를 사용하지 않기 위한 것
-                    Set<Long> uniqueIds = new HashSet<>();
-                    for(VideoDto dto : videoViewsList) {
-                        uniqueIds.add(dto.getId());
-                    }
-                    uniqueIds.add(item.getVideoId());
-                    idIterator = uniqueIds.iterator();
-                }
-
-                if(!idIterator.hasNext()) {
-                    return null;
-                }
-
-                Long targetVideoId = idIterator.next();
-                for(VideoDto dto : videoViewsList) {
-                    if(dto.getId().equals(targetVideoId)) {
-                        long diff = dto.getViews() - item.getCumulativeViews(); // 일별 조회수 계산
-
-                        return VideoDailyStats.builder()
-                                .videoId(dto.getId())
-                                .dailyViews(diff)
-                                .dailyWatchTime(0) // 재생 시간은 아직 알지 못하므로 0으로 생성
-                                .build();
-                    }
-                }
-                return null;
-
+            public VideoDailyStats process(Pair<VideoDto, VideoCumulativeStats> pair) throws Exception {
+                VideoDto NDayVideo = pair.getLeft();
+                VideoCumulativeStats peviousDayVideo = pair.getRight();
+                long diff = NDayVideo.getVideoViews() - peviousDayVideo.getCumulativeViews();
+                return VideoDailyStats.builder()
+                        .videoId(NDayVideo.getId())
+                        .dailyViews(diff)
+                        .dailyWatchTime(0)
+                        .build();
             }
         };
     }

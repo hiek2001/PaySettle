@@ -18,4 +18,7 @@ public interface VideoRepository extends JpaRepository<Video, Long> {
 
     @Query("SELECT new com.project.streamingservice.dto.VideoDto(v.id, v.videoViews) FROM Video v")
     List<VideoDto> batchFindAll();
+
+    @Query("SELECT new com.project.streamingservice.dto.VideoDto(v.id, v.videoViews) FROM Video v WHERE v.id > :lastId ORDER BY v.id ASC LIMIT :pageSize")
+    List<VideoDto> batchFindAfterId(@Param("lastId") Long lastId,@Param("pageSize") int pageSize);
 }

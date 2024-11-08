@@ -143,6 +143,10 @@ public class StreamingService {
         return videoRepository.batchFindAll();
     }
 
+    public List<VideoDto> getVideoAfterId(Long afterId, int pageSize) {
+        return videoRepository.batchFindAfterId(afterId, pageSize);
+    }
+
     public List<Long> getAllVideoIds() {
         return videoRepository.findAllIds();
     }
