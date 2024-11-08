@@ -27,8 +27,9 @@ public class JwtFilter extends AbstractGatewayFilterFactory<JwtFilter.Config> {
     private String jwtSecret;
 
     private final List<String> exemptPaths = Arrays.asList(
-            "/user-service/login/kakao",
-            "/user-service/login/kakao/redirect"
+            "/api/users/login/kakao",
+            "/api/users/login/kakao/redirect",
+            "/batch/insert/video"
     );
 
     public JwtFilter() {
