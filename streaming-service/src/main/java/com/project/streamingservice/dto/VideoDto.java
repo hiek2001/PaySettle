@@ -6,10 +6,10 @@ import lombok.Getter;
 @Getter
 public class VideoDto {
     private Long id;
-    private Long videoViews;
+    private long videoViews;
 
     @Builder
-    public VideoDto(Long id, Long videoViews) {
+    public VideoDto(Long id, long videoViews) {
         this.id = id;
         this.videoViews = videoViews;
     }

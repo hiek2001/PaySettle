@@ -8,11 +8,11 @@ import java.io.Serializable;
 @Getter
 public class VideoDto implements Serializable {
     private Long id;
-    private Long views;
+    private long videoViews;
 
     @Builder
-    public VideoDto(Long id, Long views) {
+    public VideoDto(Long id, long videoViews) {
         this.id = id;
-        this.views = views;
+        this.videoViews = videoViews;
     }
 }
