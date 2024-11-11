@@ -1,5 +1,6 @@
 package com.project.revenueservice.schedule;
 
+import com.project.revenueservice.util.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -19,6 +20,8 @@ public class VideoCumulativeSchedule {
 
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
+
+    private DateUtils dateUtils;
 
     public VideoCumulativeSchedule(JobLauncher jobLauncher, JobRegistry jobRegistry) {
         this.jobLauncher = jobLauncher;
@@ -40,16 +43,15 @@ public class VideoCumulativeSchedule {
         jobLauncher.run(jobRegistry.getJob("combinedJob"), jobParameters);
 
         // 일요일이면 주간 스케줄러를 추가 실행
-        if (isSunday()) {
+        if (dateUtils.isSunday()) {
             runWeeklyJob(jobParameters);
         }
+
     }
 
     private void runWeeklyJob(JobParameters jobParameters) throws Exception {
         jobLauncher.run(jobRegistry.getJob("videoWeeklyStatsJob"), jobParameters);
     }
 
-    private boolean isSunday() {
-        return LocalDate.now().getDayOfWeek() == DayOfWeek.SUNDAY;
-    }
+
 }
