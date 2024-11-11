@@ -65,7 +65,7 @@ public class VideoWeeklyStatsBatch {
     @Bean
     @StepScope
     public JpaPagingItemReader<VideoDailyStatsBatchDto> getDailyStatsReader(
-            @Value("#{jobParameters[currentDate]}") String currentDate) {
+            @Value("#{jobParameters["+ BatchKeys.CURRENT_DATE +"]}") String currentDate) {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 

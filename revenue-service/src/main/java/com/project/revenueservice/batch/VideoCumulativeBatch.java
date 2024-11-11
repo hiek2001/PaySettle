@@ -136,7 +136,7 @@ public class VideoCumulativeBatch {
     @Bean
     @StepScope
     public ItemProcessor<UserVideoHistoryBatchDto, VideoCumulativeStats> watchTimeProcessor(
-            @Value("#{jobParameters[currentDate]}") String currentDate) {
+            @Value("#{jobParameters["+ BatchKeys.CURRENT_DATE +"]}") String currentDate) {
         return new ItemProcessor<UserVideoHistoryBatchDto, VideoCumulativeStats>() {
 
             @Override

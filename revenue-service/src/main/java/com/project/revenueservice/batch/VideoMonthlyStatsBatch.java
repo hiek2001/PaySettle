@@ -60,7 +60,7 @@ public class VideoMonthlyStatsBatch {
     @Bean
     @StepScope
     public JpaPagingItemReader<VideoWeeklyStatsBatchDto> getWeeklyStatsReader(
-            @Value("#{jobParameters[targetMonth]}") String targetMonth) {
+            @Value("#{jobParameters["+ BatchKeys.TARGET_MONTH +"]}") String targetMonth) {
         return new JpaPagingItemReaderBuilder<VideoWeeklyStatsBatchDto>()
                 .name("getWeeklyStatsReader")
                 .entityManagerFactory(entityManagerFactory)

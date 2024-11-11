@@ -154,9 +154,9 @@ public class VideoDailyStatsBatch {
     @Bean
     @StepScope
     public JdbcPagingItemReader<VideoCumulativeStats> getPreviousDayCumulativeReader(
-            @Value("#{jobParameters[currentDate]}") String currentDate,
-            @Value("#{stepExecutionContext[startPage]}") int startPage,
-            @Value("#{stepExecutionContext[endPage]}") int endPage
+            @Value("#{jobParameters["+ BatchKeys.CURRENT_DATE +"]}") String currentDate,
+            @Value("#{stepExecutionContext["+ BatchKeys.START_PAGE +"]}") int startPage,
+            @Value("#{stepExecutionContext["+ BatchKeys.END_PAGE +"]}") int endPage
     ) throws Exception {
         // String을 Date로 변환
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -198,9 +198,9 @@ public class VideoDailyStatsBatch {
     @Bean
     @StepScope
     public ItemReader<Pair<VideoDto, VideoCumulativeStats>> multiReader(
-            @Value("#{jobParameters[currentDate]}") String currentDate,
-            @Value("#{stepExecutionContext[startPage]}") int startPage,
-            @Value("#{stepExecutionContext[endPage]}") int endPage
+            @Value("#{jobParameters["+BatchKeys.CURRENT_DATE+"]}") String currentDate,
+            @Value("#{stepExecutionContext["+BatchKeys.START_PAGE+"]}") int startPage,
+            @Value("#{stepExecutionContext["+BatchKeys.END_PAGE+"]}") int endPage
     ) throws Exception {
         return new ItemReader<Pair<VideoDto, VideoCumulativeStats>>() {
 
@@ -287,7 +287,7 @@ public class VideoDailyStatsBatch {
     @Bean
     @StepScope
     public RepositoryItemReader<VideoCumulativeStats> getPreviousDayWatchTimeCumulativeReader(
-            @Value("#{jobParameters[currentDate]}") String currentDate) throws ParseException { // 스케줄링 실행할 때 입력받은 날짜 전달 받음
+            @Value("#{jobParameters["+BatchKeys.CURRENT_DATE+"]}") String currentDate) throws ParseException { // 스케줄링 실행할 때 입력받은 날짜 전달 받음
 
         // String을 Date로 변환
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -311,8 +311,8 @@ public class VideoDailyStatsBatch {
     @Bean
     @StepScope
     public ItemProcessor<VideoCumulativeStats, VideoDailyStats> watchTimeDiffProcessor(
-            @Value("#{jobExecutionContext[videoWatchTimeList]}") List<UserVideoHistoryBatchDto> videoWatchTimeList, // step executionContext를 job executionContext로 승격시켜 전달 받음
-            @Value("#{jobParameters[currentDate]}") String currentDate) {
+            @Value("#{jobExecutionContext["+BatchKeys.VIDEO_WATCH_TIME_LIST+"]}") List<UserVideoHistoryBatchDto> videoWatchTimeList, // step executionContext를 job executionContext로 승격시켜 전달 받음
+            @Value("#{jobParameters["+BatchKeys.CURRENT_DATE+"]}") String currentDate) {
 
         return new ItemProcessor<VideoCumulativeStats, VideoDailyStats>() {
             private Iterator<Long> idIterator;

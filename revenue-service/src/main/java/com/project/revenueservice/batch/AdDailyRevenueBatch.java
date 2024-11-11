@@ -7,6 +7,7 @@ import com.project.revenueservice.entity.GlobalPricing;
 import com.project.revenueservice.entity.MediaTypeEnum;
 import com.project.revenueservice.repository.AdDailyRevenueRepository;
 import com.project.revenueservice.repository.GlobalPricingRepository;
+import com.project.revenueservice.util.AmountUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -45,6 +46,8 @@ public class AdDailyRevenueBatch {
     private final AdDailyRevenueRepository adRevenueRepository;
 
     private final StreamingServiceClient streamingClient;
+
+    private AmountUtils amountUtils;
 
     @Value("${spring.batch.chunksize}")
     private int chunkSize;
@@ -102,7 +105,7 @@ public class AdDailyRevenueBatch {
     @Bean
     @StepScope
     public ItemReader<AdCountBatchDto> getAdDailyRevenueReader(
-            @Value("#{jobParameters[currentDate]}") String currentDate) {
+            @Value("#{jobParameters["+BatchKeys.CURRENT_DATE+"]}") String currentDate) {
 
         return new ItemReader<>() {
             private Iterator<AdCountBatchDto> iterator;
@@ -126,13 +129,13 @@ public class AdDailyRevenueBatch {
     @Bean
     @StepScope
     public ItemProcessor<AdCountBatchDto, AdDailyRevenue> adDailyRevenueProcessor(
-            @Value("#{jobExecutionContext[priceList]}") List<GlobalPricing> priceList) {
+            @Value("#{jobExecutionContext["+BatchKeys.PRICE_LIST+"]}") List<GlobalPricing> priceList) {
 
         return new ItemProcessor<AdCountBatchDto, AdDailyRevenue>() {
 
             @Override
             public AdDailyRevenue process(AdCountBatchDto item) throws Exception {
-                long totalAmount = calculateAmountForViews(priceList, item.getAdCount()); // 정산 금액 계산
+                long totalAmount = amountUtils.calculateAmountForViews(priceList, item.getAdCount()); // 정산 금액 계산
 
                 return AdDailyRevenue.builder()
                         .videoId(item.getVideoId())
@@ -150,39 +153,6 @@ public class AdDailyRevenueBatch {
                 .build();
     }
 
-    // 정산 금액 계산
-    public long calculateAmountForViews(List<GlobalPricing> priceList, long views) {
-        long totalAmount = 0;
-        long remainingViews = views;
 
-        for (int i = 0; i < priceList.size(); i++) {
-            GlobalPricing price = priceList.get(i);
-            long minViews = price.getMinViews();
-            long maxViews = price.getMaxViews() == 0 ? Long.MAX_VALUE : price.getMaxViews(); // 상한이 없는 경우를 처리
-
-            // 마지막 구간 여부를 확인
-            boolean isLastTier = (i == priceList.size() - 1);
-
-            if (isLastTier) {
-                // 마지막 구간에서는 remainingViews 전체에 단가를 적용
-                totalAmount += (long) (remainingViews * price.getUnitPrice());
-                break;
-            } else {
-                // 마지막 구간이 아닐 때는 구간별 조회수를 계산
-                if (remainingViews > minViews) {
-                    long viewsInThisRange = Math.min(remainingViews, maxViews - minViews);
-
-                    totalAmount += (long) (viewsInThisRange * price.getUnitPrice());
-                    remainingViews -= viewsInThisRange;
-                }
-            }
-            // 남은 조회수가 0이면 더 이상 계산하지 않음
-            if (remainingViews <= 0) {
-                break;
-            }
-        }
-
-        return totalAmount;
-    }
 
 }
