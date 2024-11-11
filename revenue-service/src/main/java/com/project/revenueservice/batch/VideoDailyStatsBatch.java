@@ -47,7 +47,6 @@ import java.util.*;
 @Configuration
 @RequiredArgsConstructor
 public class VideoDailyStatsBatch {
-
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
 
@@ -70,13 +69,10 @@ public class VideoDailyStatsBatch {
 
     @Bean
     public Job videoDailyStatsJob() throws Exception {
-        log.info("동영상 - 일별 통계 배치 시작");
-
-        return new JobBuilder("videoDailyStatsJob", jobRepository)
+        return new JobBuilder(BatchConstants.VIDEO_DAILY_STATS+"Job", jobRepository)
                 .start(viewsStepManager())
-                // .start(calculateDiffViewsStep())
                 .next(videoWatchTimeTaskletStep())
-                .next(calculateDiffWatchTimeStep())
+                .next(videoWatchTimeStep())
                 .build();
     }
 
@@ -84,7 +80,7 @@ public class VideoDailyStatsBatch {
     @Bean
     public TaskExecutorPartitionHandler partitionHandler() throws Exception {
         TaskExecutorPartitionHandler partitionHandler = new TaskExecutorPartitionHandler();
-        partitionHandler.setStep(calculateDiffViewsStep());
+        partitionHandler.setStep(videoDailyStatsStep());
         partitionHandler.setTaskExecutor(viewsStepExecutor());
         partitionHandler.setGridSize(poolsize);
         return partitionHandler;
@@ -104,8 +100,8 @@ public class VideoDailyStatsBatch {
     @Bean
     public Step viewsStepManager() throws Exception {
         return new StepBuilder("viewsStep.manager", jobRepository)
-                .partitioner("calculateDiffViewsStep", partitioner())
-                .step(calculateDiffViewsStep())
+                .partitioner(BatchConstants.VIDEO_DAILY_STATS+"Step", partitioner())
+                .step(videoDailyStatsStep())
                 .partitionHandler(partitionHandler())
                 .build();
     }
@@ -117,14 +113,13 @@ public class VideoDailyStatsBatch {
 
     // 일별 조회수
     @Bean
-    public Step calculateDiffViewsStep() throws Exception {
-        log.info("calculateDiffViewsStep");
-        return new StepBuilder("calculateDiffViewsStep", jobRepository)
+    public Step videoDailyStatsStep() throws Exception {
+        return new StepBuilder(BatchConstants.VIDEO_DAILY_STATS+"Step", jobRepository)
                 .<Pair<VideoDto, VideoCumulativeStats>, VideoDailyStats>chunk(chunkSize, transactionManager)
                 .reader(multiReader(null, 0, 0))
                 .processor(viewsDiffProcessor())
                 .writer(viewsDiffWriter())
-                .listener((StepExecutionListener) chunkExecutionListener)
+                .listener((StepExecutionListener) chunkExecutionListener) // 처리 시간 계산 logging
                 .listener((ItemReadListener<? super Pair<VideoDto, VideoCumulativeStats>>) chunkExecutionListener)
                 .listener((ItemProcessListener<? super Pair<VideoDto, VideoCumulativeStats>, ? super VideoDailyStats>) chunkExecutionListener)
                 .build();
@@ -173,8 +168,6 @@ public class VideoDailyStatsBatch {
         params.put("startPage", startPage);
         params.put("endPage", endPage);
 
-        log.info("reader startPage={}, endPage={}", startPage, endPage);
-
         JdbcPagingItemReader<VideoCumulativeStats> reader = new JdbcPagingItemReader<>();
         reader.setDataSource(dataSource);
         reader.setFetchSize(chunkSize);
@@ -196,7 +189,6 @@ public class VideoDailyStatsBatch {
         // 파라미터 값 설정
         MapSqlParameterSource parameterValues = new MapSqlParameterSource();
         parameterValues.addValues(params);
-        //parameterValues.addValue("createdAt", parsedDate);
         reader.setParameterValues(parameterValues.getValues());
 
         return reader;
@@ -256,7 +248,7 @@ public class VideoDailyStatsBatch {
     // videoWatchTimeTaskletStep : 재생내역에서 동영상 별로 재생 시간 합산(SUM, GROUP BY)한 후 조회하여 Step ExecutionContext에 저장
     @Bean
     public Step videoWatchTimeTaskletStep() {
-        return new StepBuilder("videoWatchTimeTaskletStep", jobRepository)
+        return new StepBuilder(BatchConstants.VIDEO_WATCH_TIME+"TaskletStep", jobRepository)
                 .tasklet(videoWatchTimeTasklet(), transactionManager)
                 .listener(promotionListener())
                 .build();
@@ -282,10 +274,8 @@ public class VideoDailyStatsBatch {
 
     // calculateDiffWatchTimeStep : 누적 N일차 재생시간 - 누적 N-1일차 재생시간을 통해 일별 재생시간 계산하여 업데이트
     @Bean
-    public Step calculateDiffWatchTimeStep() throws ParseException {
-        log.info("calculateDiffWatchTimeStep");
-
-        return new StepBuilder("calculateDiffWatchTimeStep", jobRepository)
+    public Step videoWatchTimeStep() throws ParseException {
+        return new StepBuilder(BatchConstants.VIDEO_WATCH_TIME+"Step", jobRepository)
                 .<VideoCumulativeStats, VideoDailyStats>chunk(chunkSize, transactionManager)
                 .reader(getPreviousDayWatchTimeCumulativeReader(null))
                 .processor(watchTimeDiffProcessor(null, null))

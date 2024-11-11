@@ -39,8 +39,8 @@ public class VideoStatsJobFlow {
     // 누적 N일차 job flow
     @Bean
     public Flow cumulativeJobFlow(Job videoCumulativeJob) {
-        return new FlowBuilder<Flow>("videoCumulativeJobFlow")
-                .start(new JobStepBuilder(new StepBuilder("videoCumulativeStep", jobRepository))
+        return new FlowBuilder<Flow>(BatchConstants.VIDEO_CUMULATIVE+"JobFlow")
+                .start(new JobStepBuilder(new StepBuilder(BatchConstants.VIDEO_CUMULATIVE+"Step", jobRepository))
                         .job(videoCumulativeJob)
                         .build())
                 .build();
@@ -49,8 +49,8 @@ public class VideoStatsJobFlow {
     // 일별 통계 job flow
     @Bean
     public Flow dailyStatsJobFlow(Job videoDailyStatsJob) {
-        return new FlowBuilder<Flow>("dailyStatsJobFlow")
-                .start(new JobStepBuilder(new StepBuilder("videoDailyStatsStep", jobRepository))
+        return new FlowBuilder<Flow>(BatchConstants.VIDEO_DAILY_STATS+"JobFlow")
+                .start(new JobStepBuilder(new StepBuilder(BatchConstants.VIDEO_DAILY_STATS+"Step", jobRepository))
                         .job(videoDailyStatsJob)
                         .build())
                 .build();
@@ -59,8 +59,8 @@ public class VideoStatsJobFlow {
     // 영상 일별 정산 job flow
     @Bean
     public Flow revenueJobFlow(Job videoDailyRevenueJob) {
-        return new FlowBuilder<Flow>("revenueJobFlow")
-                .start(new JobStepBuilder(new StepBuilder("videoDailyRevenueStep", jobRepository))
+        return new FlowBuilder<Flow>(BatchConstants.VIDEO_DAILY_REVENUE+"JobFlow")
+                .start(new JobStepBuilder(new StepBuilder(BatchConstants.VIDEO_DAILY_REVENUE+"Step", jobRepository))
                         .job(videoDailyRevenueJob)
                         .build())
                 .build();
@@ -69,12 +69,10 @@ public class VideoStatsJobFlow {
     // 광고 일별 정산 job flow
     @Bean
     public Flow adRevenueJobFlow(Job adDailyRevenueJob) {
-        return new FlowBuilder<Flow>("adRevenueJobFlow")
-                .start(new JobStepBuilder(new StepBuilder("adDailyRevenueStep", jobRepository))
+        return new FlowBuilder<Flow>(BatchConstants.AD_DAILY_REVENUE+"JobFlow")
+                .start(new JobStepBuilder(new StepBuilder(BatchConstants.AD_DAILY_REVENUE+"Step", jobRepository))
                         .job(adDailyRevenueJob)
                         .build())
                 .build();
     }
-
-
 }

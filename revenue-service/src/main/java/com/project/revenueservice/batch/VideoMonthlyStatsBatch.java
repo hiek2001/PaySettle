@@ -41,9 +41,7 @@ public class VideoMonthlyStatsBatch {
 
     @Bean
     public Job videoMonthlyStatsJob() {
-        log.info("동영상 - 월별 통계 배치 시작");
-
-        return new JobBuilder("videoMonthlyStatsJob", jobRepository)
+        return new JobBuilder(BatchConstants.VIDEO_MONTHLY_STATS+"Job", jobRepository)
                 .start(monthlyStatsStep())
                 .build();
     }
@@ -51,9 +49,7 @@ public class VideoMonthlyStatsBatch {
     // 조회수, 재생 시간
     @Bean
     public Step monthlyStatsStep() {
-        log.info("monthlyStatsStep ");
-
-        return new StepBuilder("monthlyStatsStep", jobRepository)
+        return new StepBuilder(BatchConstants.VIDEO_MONTHLY_STATS+"Step", jobRepository)
                 .<VideoWeeklyStatsBatchDto, VideoMonthlyStats> chunk(chunkSize, transactionManager)
                 .reader(getWeeklyStatsReader(null))
                 .processor(monthlyStatsProcessor())
@@ -65,8 +61,6 @@ public class VideoMonthlyStatsBatch {
     @StepScope
     public JpaPagingItemReader<VideoWeeklyStatsBatchDto> getWeeklyStatsReader(
             @Value("#{jobParameters[targetMonth]}") String targetMonth) {
-        log.info("getWeeklyStatsReader");
-
         return new JpaPagingItemReaderBuilder<VideoWeeklyStatsBatchDto>()
                 .name("getWeeklyStatsReader")
                 .entityManagerFactory(entityManagerFactory)
@@ -80,8 +74,6 @@ public class VideoMonthlyStatsBatch {
 
     @Bean
     public ItemProcessor<VideoWeeklyStatsBatchDto, VideoMonthlyStats> monthlyStatsProcessor() {
-        log.info("weeklyStatsProcessor");
-
         return new ItemProcessor<VideoWeeklyStatsBatchDto, VideoMonthlyStats>() {
 
             @Override

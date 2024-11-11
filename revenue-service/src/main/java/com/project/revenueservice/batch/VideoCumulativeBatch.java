@@ -45,9 +45,7 @@ public class VideoCumulativeBatch {
 
     @Bean
     public Job videoCumulativeJob() {
-        log.info("동영상 - 누적 N일차 배치 시작");
-
-        return new JobBuilder("videoCumulativeJob", jobRepository)
+        return new JobBuilder(BatchConstants.VIDEO_CUMULATIVE+"Job", jobRepository)
                 .start(viewsStep())
                 .next(watchTimeStep())
                 .build();
@@ -56,8 +54,6 @@ public class VideoCumulativeBatch {
     // viewStep : 동영상 별로 동영상 조회수 집계할 누적 N일차 VideoCumulativeStats 객체 생성
     @Bean
     public Step viewsStep() {
-        log.info("views Step");
-
         return new StepBuilder("viewsStep", jobRepository)
                 .<VideoDto, VideoCumulativeStats> chunk(chunkSize, transactionManager)
                 .reader(viewsReader())
@@ -86,8 +82,6 @@ public class VideoCumulativeBatch {
 
     @Bean
     public ItemProcessor<VideoDto, VideoCumulativeStats> viewsProcessor() {
-        log.info("view Processor");
-
         return new ItemProcessor<VideoDto, VideoCumulativeStats>() {
 
             @Override
@@ -112,8 +106,6 @@ public class VideoCumulativeBatch {
     // watchTimeStep : 재생 내역을 바탕으로 동영상 별 재생 시간을 집계할 누적 N일차 VideoCumulativeStats 객체 생성
     @Bean
     public Step watchTimeStep() {
-        log.info("watchTimeStep");
-
         return new StepBuilder("watchTimeStep", jobRepository)
                 .<UserVideoHistoryBatchDto, VideoCumulativeStats> chunk(chunkSize, transactionManager)
                 .reader(watchTimeReader())
@@ -145,8 +137,6 @@ public class VideoCumulativeBatch {
     @StepScope
     public ItemProcessor<UserVideoHistoryBatchDto, VideoCumulativeStats> watchTimeProcessor(
             @Value("#{jobParameters[currentDate]}") String currentDate) {
-        log.info("watchTimeProcessor");
-
         return new ItemProcessor<UserVideoHistoryBatchDto, VideoCumulativeStats>() {
 
             @Override
@@ -174,8 +164,6 @@ public class VideoCumulativeBatch {
 
     @Bean
     public ItemWriter<VideoCumulativeStats> watchTimeWriter() {
-        log.info("watchTimeWriter");
-
         return new RepositoryItemWriterBuilder<VideoCumulativeStats>()
                 .repository(videoCumulativeStatsRepository)
                 .methodName("save")

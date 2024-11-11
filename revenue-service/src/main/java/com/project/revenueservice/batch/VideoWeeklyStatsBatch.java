@@ -24,6 +24,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j(topic = "동영상 주간 통계")
@@ -42,9 +43,7 @@ public class VideoWeeklyStatsBatch {
 
     @Bean
     public Job videoWeeklyStatsJob() {
-        log.info("videoWeeklyStatsJob");
-
-        return new JobBuilder("videoWeeklyStatsJob", jobRepository)
+        return new JobBuilder(BatchConstants.VIDEO_WEEKLY_STATS+"Job", jobRepository)
                 .start(weeklyStatsStep())
                 .build();
 
@@ -53,8 +52,6 @@ public class VideoWeeklyStatsBatch {
     // 조회수, 재생 시간
     @Bean
     public Step weeklyStatsStep() {
-        log.info("weeklyStatsStep ");
-
         return new StepBuilder("weeklyViewsStep", jobRepository)
                 .<VideoDailyStatsBatchDto, VideoWeeklyStats> chunk(chunkSize, transactionManager)
                 .reader(getDailyStatsReader(null))
@@ -70,18 +67,18 @@ public class VideoWeeklyStatsBatch {
     public JpaPagingItemReader<VideoDailyStatsBatchDto> getDailyStatsReader(
             @Value("#{jobParameters[currentDate]}") String currentDate) {
 
-        log.info("getDailyStatsReader");
-
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate endDate = LocalDate.parse(currentDate.substring(0, 10), formatter);
-        LocalDate startDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(6);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("startDate", LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(6));
+        params.put("endDate", LocalDate.parse(currentDate.substring(0, 10), formatter));
 
         return new JpaPagingItemReaderBuilder<VideoDailyStatsBatchDto>()
                 .name("getDailyStatsReader")
                 .entityManagerFactory(entityManagerFactory)
                 .queryString("SELECT new com.project.revenueservice.dto.VideoDailyStatsBatchDto(vds.videoId, SUM(vds.dailyViews), SUM(vds.dailyWatchTime)) FROM VideoDailyStats vds " +
                         "WHERE vds.createdAt BETWEEN :startDate AND :endDate GROUP BY vds.videoId")
-                .parameterValues(Map.of("startDate", startDate, "endDate", endDate))
+                .parameterValues(params)
                 .pageSize(chunkSize)
                 .build();
     }
@@ -89,8 +86,6 @@ public class VideoWeeklyStatsBatch {
     // 주간
     @Bean
     public ItemProcessor<VideoDailyStatsBatchDto, VideoWeeklyStats> weeklyStatsProcessor() {
-        log.info("weeklyStatsProcessor");
-
         return new ItemProcessor<VideoDailyStatsBatchDto, VideoWeeklyStats>() {
 
             @Override

@@ -55,7 +55,7 @@ public class AdDailyRevenueBatch {
     public Job adDailyRevenueJob() throws ParseException {
         log.info("일별 광고 정산 배치 시작");
 
-        return new JobBuilder("adDailyRevenueJob", jobRepository)
+        return new JobBuilder(BatchConstants.AD_DAILY_REVENUE+"Job", jobRepository)
                 .start(globalPricingTaskletStep())
                 .next(adDailyRevenueStep())
                 .build();
@@ -91,7 +91,7 @@ public class AdDailyRevenueBatch {
     @Bean
     public Step adDailyRevenueStep() throws ParseException {
 
-        return new StepBuilder("adDailyRevenueStep", jobRepository)
+        return new StepBuilder(BatchConstants.AD_DAILY_REVENUE+"Step", jobRepository)
                 .<AdCountBatchDto, AdDailyRevenue> chunk(chunkSize, transactionManager)
                 .reader(getAdDailyRevenueReader(null))
                 .processor(adDailyRevenueProcessor(null))
