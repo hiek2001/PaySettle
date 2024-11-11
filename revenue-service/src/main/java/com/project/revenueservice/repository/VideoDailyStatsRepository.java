@@ -2,8 +2,6 @@ package com.project.revenueservice.repository;
 
 import com.project.revenueservice.dto.RankVideoInfoDto;
 import com.project.revenueservice.entity.VideoDailyStats;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,5 +29,4 @@ public interface VideoDailyStatsRepository extends JpaRepository<VideoDailyStats
 
     // batch
     VideoDailyStats findByVideoIdAndCreatedAt(Long videoId, LocalDate createdAt);
-
 }

@@ -166,4 +166,8 @@ public class StreamingService {
     public List<AdCountBatchDto> getAdCountByDate(@RequestParam LocalDate currentDate) {
         return videoAdHistoryRepository.getAdCountByDate(currentDate);
     }
+
+    public int getVideoTotalCount() {
+        return videoRepository.getVideoTotalCount();
+    }
 }

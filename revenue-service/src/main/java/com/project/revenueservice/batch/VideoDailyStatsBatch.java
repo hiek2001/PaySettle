@@ -1,6 +1,7 @@
 package com.project.revenueservice.batch;
 
 import com.project.revenueservice.batch.listener.ChunkExecutionTimeListener;
+import com.project.revenueservice.batch.partitioner.VideoIdRangePartitioner;
 import com.project.revenueservice.client.StreamingServiceClient;
 import com.project.revenueservice.dto.UserVideoHistoryBatchDto;
 import com.project.revenueservice.dto.VideoDto;
@@ -15,13 +16,11 @@ import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.listener.ExecutionContextPromotionListener;
+import org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
-import org.springframework.batch.item.ExecutionContext;
-import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.ParseException;
+import org.springframework.batch.item.*;
 import org.springframework.batch.item.data.RepositoryItemReader;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
@@ -32,9 +31,11 @@ import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
@@ -62,6 +63,9 @@ public class VideoDailyStatsBatch {
     @Value("${spring.batch.chunksize}")
     private int chunkSize;
 
+    @Value("${spring.batch.partition.poolsize}")
+    private int poolsize;
+
 
 
     @Bean
@@ -69,11 +73,46 @@ public class VideoDailyStatsBatch {
         log.info("동영상 - 일별 통계 배치 시작");
 
         return new JobBuilder("videoDailyStatsJob", jobRepository)
-                .start(calculateDiffViewsStep())
-                .next(calculateDiffViewsStep())
+                .start(viewsStepManager())
+                // .start(calculateDiffViewsStep())
                 .next(videoWatchTimeTaskletStep())
                 .next(calculateDiffWatchTimeStep())
                 .build();
+    }
+
+    // 일별 조회수 파티션 적용
+    @Bean
+    public TaskExecutorPartitionHandler partitionHandler() throws Exception {
+        TaskExecutorPartitionHandler partitionHandler = new TaskExecutorPartitionHandler();
+        partitionHandler.setStep(calculateDiffViewsStep());
+        partitionHandler.setTaskExecutor(viewsStepExecutor());
+        partitionHandler.setGridSize(poolsize);
+        return partitionHandler;
+    }
+
+    @Bean
+    public TaskExecutor viewsStepExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(poolsize);
+        executor.setMaxPoolSize(poolsize);
+        executor.setThreadNamePrefix("partition-thread");
+        executor.setWaitForTasksToCompleteOnShutdown(Boolean.TRUE);
+        executor.initialize();
+        return executor;
+    }
+
+    @Bean
+    public Step viewsStepManager() throws Exception {
+        return new StepBuilder("viewsStep.manager", jobRepository)
+                .partitioner("calculateDiffViewsStep", partitioner())
+                .step(calculateDiffViewsStep())
+                .partitionHandler(partitionHandler())
+                .build();
+    }
+
+    @Bean
+    public VideoIdRangePartitioner partitioner() {
+        return new VideoIdRangePartitioner(streamingClient);
     }
 
     // 일별 조회수
@@ -82,7 +121,7 @@ public class VideoDailyStatsBatch {
         log.info("calculateDiffViewsStep");
         return new StepBuilder("calculateDiffViewsStep", jobRepository)
                 .<Pair<VideoDto, VideoCumulativeStats>, VideoDailyStats>chunk(chunkSize, transactionManager)
-                .reader(multiReader(null))
+                .reader(multiReader(null, 0, 0))
                 .processor(viewsDiffProcessor())
                 .writer(viewsDiffWriter())
                 .listener((StepExecutionListener) chunkExecutionListener)
@@ -119,25 +158,36 @@ public class VideoDailyStatsBatch {
     // 일별 (N-1일차 누적 조회수 : 누적 테이블에서 N-1일차 누적 조회수 가져오기)
     @Bean
     @StepScope
-    public JdbcPagingItemReader<VideoCumulativeStats> getPreviousDayCumulativeReader(@Value("#{jobParameters[currentDate]}") String currentDate) throws Exception {
+    public JdbcPagingItemReader<VideoCumulativeStats> getPreviousDayCumulativeReader(
+            @Value("#{jobParameters[currentDate]}") String currentDate,
+            @Value("#{stepExecutionContext[startPage]}") int startPage,
+            @Value("#{stepExecutionContext[endPage]}") int endPage
+    ) throws Exception {
         // String을 Date로 변환
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        // LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(1);
-        LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(3); // test : 2024-11-05
+        LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(1);
+        //LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(6); // test : 2024-11-05
 
-       JdbcPagingItemReader<VideoCumulativeStats> reader = new JdbcPagingItemReader<>();
-       reader.setDataSource(dataSource);
-       reader.setFetchSize(chunkSize);
+        Map<String, Object> params = new HashMap<>();
+        params.put("createdAt", parsedDate);
+        params.put("startPage", startPage);
+        params.put("endPage", endPage);
+
+        log.info("reader startPage={}, endPage={}", startPage, endPage);
+
+        JdbcPagingItemReader<VideoCumulativeStats> reader = new JdbcPagingItemReader<>();
+        reader.setDataSource(dataSource);
+        reader.setFetchSize(chunkSize);
 
         // RowMapper 설정
-       reader.setRowMapper(new BeanPropertyRowMapper<>(VideoCumulativeStats.class));
+        reader.setRowMapper(new BeanPropertyRowMapper<>(VideoCumulativeStats.class));
 
         // 쿼리 프로바이더 설정
         SqlPagingQueryProviderFactoryBean queryProvider = new SqlPagingQueryProviderFactoryBean();
         queryProvider.setDataSource(dataSource);
         queryProvider.setSelectClause("SELECT DISTINCT video_id, created_at, cumulative_views, cumulative_watch_time, id");
         queryProvider.setFromClause("FROM video_cumulative_stats");
-        queryProvider.setWhereClause("WHERE created_at = :createdAt");
+        queryProvider.setWhereClause("WHERE created_at = :createdAt AND video_id BETWEEN :startPage AND :endPage");
         queryProvider.setSortKey("id");
 
         // QueryProvider를 JdbcPagingItemReader에 설정
@@ -145,7 +195,8 @@ public class VideoDailyStatsBatch {
 
         // 파라미터 값 설정
         MapSqlParameterSource parameterValues = new MapSqlParameterSource();
-        parameterValues.addValue("createdAt", parsedDate);
+        parameterValues.addValues(params);
+        //parameterValues.addValue("createdAt", parsedDate);
         reader.setParameterValues(parameterValues.getValues());
 
         return reader;
@@ -154,13 +205,17 @@ public class VideoDailyStatsBatch {
 
     @Bean
     @StepScope
-    public ItemReader<Pair<VideoDto, VideoCumulativeStats>> multiReader(@Value("#{jobParameters[currentDate]}") String currentDate) throws Exception {
+    public ItemReader<Pair<VideoDto, VideoCumulativeStats>> multiReader(
+            @Value("#{jobParameters[currentDate]}") String currentDate,
+            @Value("#{stepExecutionContext[startPage]}") int startPage,
+            @Value("#{stepExecutionContext[endPage]}") int endPage
+    ) throws Exception {
         return new ItemReader<Pair<VideoDto, VideoCumulativeStats>>() {
 
             @Override
             public Pair<VideoDto, VideoCumulativeStats> read() throws Exception {
                 VideoDto videoDto = viewsReader().read();
-                VideoCumulativeStats cumulativeStats = getPreviousDayCumulativeReader(currentDate).read();
+                VideoCumulativeStats cumulativeStats = getPreviousDayCumulativeReader(currentDate, startPage, endPage).read();
 
                 // 같은 videoId가 존재하는 경우 Pair로 묶어서 반환
                 if (videoDto != null && cumulativeStats != null) {
@@ -193,11 +248,9 @@ public class VideoDailyStatsBatch {
     }
 
     @Bean
-    public RepositoryItemWriter<VideoDailyStats> viewsDiffWriter() {
-        return new RepositoryItemWriterBuilder<VideoDailyStats>()
-                .repository(dailyStatsRepository)
-                .methodName("save")
-                .build();
+    @StepScope
+    public ItemWriter<VideoDailyStats> viewsDiffWriter() {
+        return dailyStatsRepository::saveAll;
     }
 
     // videoWatchTimeTaskletStep : 재생내역에서 동영상 별로 재생 시간 합산(SUM, GROUP BY)한 후 조회하여 Step ExecutionContext에 저장

@@ -52,6 +52,11 @@ public class VideoController {
         return streamingService.getVideoAfterId(lastId, pageSize);
     }
 
+    @GetMapping("/total-count")
+    public int getVideoTotalCount() {
+        return streamingService.getVideoTotalCount();
+    }
+
     @GetMapping("/all/Id")
     public List<Long> getAllVideoIds() {
         return streamingService.getAllVideoIds();

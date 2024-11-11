@@ -22,6 +22,9 @@ public interface StreamingServiceClient {
     @GetMapping("/videos/lastId")
     List<VideoDto> getVideosAfterId(@RequestParam("lastId") long lastId, @RequestParam("pageSize") int pageSize);
 
+    @GetMapping("/videos/total-count")
+    int getVideoTotalCount();
+
     @GetMapping("/videos/all/Id")
     List<Long> getAllVideoIds();
 
