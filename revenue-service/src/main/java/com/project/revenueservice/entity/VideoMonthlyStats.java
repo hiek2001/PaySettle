@@ -20,9 +20,6 @@ public class VideoMonthlyStats {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name="video_id")
-//    private Video video;
     private Long videoId;
 
     private long monthlyViews;

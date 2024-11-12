@@ -20,9 +20,6 @@ public class AdDailyRevenue {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name="video_id")
-//    private Video video; // 동영상에 삽입된 광고로 정산
     private Long videoId;
 
     private Long adAmount; // 광고 정산 금액

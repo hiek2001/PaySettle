@@ -1,6 +1,5 @@
 package com.project.revenueservice.entity;
 
-import com.project.streamingservice.entity.Video;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,9 +31,6 @@ public class VideoCumulativeStats {
         this.cumulativeViews = cumulativeViews;
         this.cumulativeWatchTime = cumulativeWatchTime;
         this.createdAt = LocalDate.now();
-    }
-
-    public VideoCumulativeStats(long l, int i) {
     }
 
     // Setter
