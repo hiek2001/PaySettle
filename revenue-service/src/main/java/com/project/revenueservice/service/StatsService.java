@@ -28,8 +28,6 @@ public class StatsService {
     private final VideoWeeklyStatsRepository weeklyStatsRepository;
     private final VideoMonthlyStatsRepository monthlyStatsRepository;
 
-    private final LastUpdatedStatsUtil lastUpdatedStatsUtil;
-
     public Top5ResponseDto top5ViewsVideo(Top5RequestDto requestDto) {
         String currentDate = requestDto.getCurrentDate() == null ? String.valueOf(LocalDate.now()) : requestDto.getCurrentDate();
         String period = requestDto.getPeriod();
@@ -50,47 +48,33 @@ public class StatsService {
     @Transactional
     public List<RankVideoInfoDto> fetchPeriodViewsData(String currentDate, String period, String type) {
         List<RankVideoInfoDto> rankVideoInfoDtoList = new ArrayList<>();
-        LocalDate lastUpdateDate = lastUpdatedStatsUtil.fetchLastUpdatedStatsDate(period, null); // 통계 테이블에 마지막으로 적재한 날짜 가져오기
+        LocalDate targetDate = LocalDate.parse(currentDate.substring(0, 10));
 
         if(period.equals("day")) {
-            LocalDate targetDate = LocalDate.parse(currentDate.substring(0, 10));
+            if(type.equals("views")) { // 조회수
+                rankVideoInfoDtoList = dailyStatsRepository.findTop5ByCreatedAtOrderByDailyViewsDesc(targetDate);
 
-
-            if(!targetDate.isAfter(lastUpdateDate)) { // 일별 테이블에서 가져오기, 통계 테이블에 계산되어 있지 않은 금일 날짜는 실시간 계산하기 위해 넣은 로직(추후 예정)
-                if(type.equals("views")) { // 조회수
-                    rankVideoInfoDtoList = dailyStatsRepository.findTop5ByCreatedAtOrderByDailyViewsDesc(targetDate);
-
-                } else if(type.equals("watchtime")) { // 재생 시간
-                    rankVideoInfoDtoList = dailyStatsRepository.findTop5ByCreatedAtOrderByDailyWatchTimeDesc(targetDate);
-                }
+            } else if(type.equals("watchtime")) { // 재생 시간
+                rankVideoInfoDtoList = dailyStatsRepository.findTop5ByCreatedAtOrderByDailyWatchTimeDesc(targetDate);
             }
-
-        } else if(period.equals("week")) {
-            LocalDate targetDate = LocalDate.parse(currentDate.substring(0, 10));
+       } else if(period.equals("week")) {
             LocalDate nextSunday = getNextSundayFromTargetDate(targetDate); // targetDate 이후 가장 가까운 일요일을 계산
+            if(type.equals("views")) { // 조회수
+                rankVideoInfoDtoList = weeklyStatsRepository.findTop5ByCreatedAtOrderByWeeklyViewsDesc(nextSunday);
 
-            if (!targetDate.isAfter(lastUpdateDate)) { // 주별 테이블에서 가져오기
-                if(type.equals("views")) { // 조회수
-                    rankVideoInfoDtoList = weeklyStatsRepository.findTop5ByCreatedAtOrderByWeeklyViewsDesc(nextSunday);
-
-                } else if(type.equals("watchtime")) { // 재생 시간
-                    rankVideoInfoDtoList = weeklyStatsRepository.findTop5ByCreatedAtOrderByWeeklyWatchTimeDesc(nextSunday);
-                }
+            } else if(type.equals("watchtime")) { // 재생 시간
+                rankVideoInfoDtoList = weeklyStatsRepository.findTop5ByCreatedAtOrderByWeeklyWatchTimeDesc(nextSunday);
             }
         } else if(period.equals("month")) {
-            YearMonth lastUpdatedMonth = YearMonth.from(lastUpdateDate);
             YearMonth targetMonth = YearMonth.parse(currentDate.substring(0, 7)); // 'yyyy-mm'
 
-            if (targetMonth.isBefore(lastUpdatedMonth) || targetMonth.equals(lastUpdatedMonth)) {
-                log.info("lastUpdatedMonth {}",lastUpdatedMonth);
-                if (type.equals("views")) { // 조회수
-                    rankVideoInfoDtoList = monthlyStatsRepository.findTop5ByCreatedAtOrderByMonthlyViewsDesc(String.valueOf(targetMonth));
+            if (type.equals("views")) { // 조회수
+                rankVideoInfoDtoList = monthlyStatsRepository.findTop5ByCreatedAtOrderByMonthlyViewsDesc(String.valueOf(targetMonth));
 
-                } else if(type.equals("watchtime")) { // 재생 시간
-                    log.info("targetMonth {}",targetMonth);
-                    rankVideoInfoDtoList = monthlyStatsRepository.findTop5ByCreatedAtOrderByMonthlyWatchTimeDesc(String.valueOf(targetMonth));
-                    log.info("rankVideoInfoDtoList {}",rankVideoInfoDtoList);
-                }
+            } else if(type.equals("watchtime")) { // 재생 시간
+                log.info("targetMonth {}",targetMonth);
+                rankVideoInfoDtoList = monthlyStatsRepository.findTop5ByCreatedAtOrderByMonthlyWatchTimeDesc(String.valueOf(targetMonth));
+                log.info("rankVideoInfoDtoList {}",rankVideoInfoDtoList);
             }
         }
 

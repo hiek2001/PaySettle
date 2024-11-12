@@ -5,18 +5,17 @@ import com.project.revenueservice.dto.RevenueRequestDto;
 import com.project.revenueservice.dto.RevenueResponseDto;
 import com.project.revenueservice.repository.AdDailyRevenueRepository;
 import com.project.revenueservice.repository.VideoDailyRevenueRepository;
-import com.project.revenueservice.util.LastUpdatedStatsUtil;
+import com.project.revenueservice.util.PeriodDateRange;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 
 @Service
 @RequiredArgsConstructor
@@ -25,9 +24,6 @@ public class RevenueService {
     private final VideoDailyRevenueRepository videoRevenueRepository;
     private final AdDailyRevenueRepository adRevenueRepository;
 
-    private final LastUpdatedStatsUtil lastUpdatedStatsUtil;
-
-    @Transactional
     public RevenueResponseDto getRevenue(RevenueRequestDto requestDto) {
         String currentDate = requestDto.getCurrentDate() == null ? String.valueOf(LocalDate.now()) : requestDto.getCurrentDate();
         String period = requestDto.getPeriod();
@@ -43,7 +39,7 @@ public class RevenueService {
                 .build();
     }
 
-
+    @Transactional
     public List<RevenueInfoDto> fetchPeriodRevenue(String currentDate, String period, String revenueType) {
         List<RevenueInfoDto> revenueList = new ArrayList<>();
         LocalDate targetDate = LocalDate.parse(currentDate.substring(0, 10));
@@ -65,32 +61,30 @@ public class RevenueService {
 
 
     public List<RevenueInfoDto> fetchRevenueByType(String period, String revenueType, LocalDate targetDate) {
+        PeriodDateRange dateRange = new PeriodDateRange(period, targetDate);
         List<RevenueInfoDto> resultList = new ArrayList<>();
-        LocalDate startDate = targetDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        LocalDate endDate = targetDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
-
-        String targetMonth = targetDate.toString().substring(0, 7);
 
         if (revenueType.equals("video")) {
             if(period.equals("day")) {
-                resultList =  videoRevenueRepository.findRevenueByDay(targetDate);
+                resultList =  videoRevenueRepository.findRevenueByDay(dateRange.getTargetDate());
             } else if(period.equals("week")) {
-                resultList =  videoRevenueRepository.findRevenueByWeek(startDate, endDate);
+                resultList =  videoRevenueRepository.findRevenueByWeek(dateRange.getStartDate(), dateRange.getEndDate());
             } else if(period.equals("month")) {
-                resultList =  videoRevenueRepository.findRevenueByMonth(targetMonth);
+                resultList =  videoRevenueRepository.findRevenueByMonth(dateRange.getTargetMonth());
             }
         } else if (revenueType.equals("ad")) {
             if(period.equals("day")) {
-                resultList =  adRevenueRepository.findRevenueByDay(targetDate);
+                resultList =  adRevenueRepository.findRevenueByDay(dateRange.getTargetDate());
             } else if(period.equals("week")) {
-                resultList =  adRevenueRepository.findRevenueByWeek(startDate, endDate);
+                resultList =  adRevenueRepository.findRevenueByWeek(dateRange.getStartDate(), dateRange.getEndDate());
             } else if(period.equals("month")) {
-                resultList =  adRevenueRepository.findRevenueByMonth(targetMonth);
+                resultList =  adRevenueRepository.findRevenueByMonth(dateRange.getTargetMonth());
             }
-
         }
         return resultList;
     }
+
+
 
     public Map<Long, RevenueInfoDto> calculateTotalRevenue(List<RevenueInfoDto> videoRevenueList, List<RevenueInfoDto> adRevenueList) {
         // videoId를 기준으로 amount를 합산할 Map 생성
