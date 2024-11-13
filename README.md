@@ -23,7 +23,7 @@ docker-compose up -d
 
 ## 🗂 ERD
 
-(ERD)
+![title](https://file.notion.so/f/f/0a660537-6246-44fa-b89f-8d3674af3d87/f8a18d7c-d8e8-4c33-a05c-049b5c1076ca/image.png?table=block&id=129533b2-f0c0-8093-8cbd-caf6c54ca99f&spaceId=0a660537-6246-44fa-b89f-8d3674af3d87&expirationTimestamp=1731585600000&signature=IZ95Y4Z_9xvv2sLlbCn8V7MR_zJpBI-Zq4TuC3NgVAc&downloadName=image.png)
 
 ## 📚 API 명세서
 
@@ -39,7 +39,7 @@ docker-compose up -d
 
 ## 🏗 아키텍쳐
 
-(그려서 추가)
+![ex_screenshot](./image/paySystem_architecture.png)
 
 ## 🌟주요 기능
 
@@ -61,8 +61,8 @@ docker-compose up -d
     -  안정적인 데이터 저장 및 조회를 위해 MySQL을 활용해 데이터를 관리
 
 ### 부하 분산 및 장애 복구
-1. 도메인별 서버 분리 및 로드 밸런싱
-    -  서비스 부하를 줄이기 위해 도메인별로 서버 분리
+1. 도메인별 서비스 분리 및 로드 밸런싱
+    -  부하 분산을 위해 도메인별 서비스 분리
     -  Spring Cloud Gateway, LoadBalancer, Eureka를 활용하여 부하가 큰 서비스에 대해 다수 인스턴스 간의 부하 분산을 구현
 
 ### 주요 API 기능
