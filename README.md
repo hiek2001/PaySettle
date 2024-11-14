@@ -27,7 +27,8 @@ docker-compose up -d
 
 ## 📚 API 명세서
 
-(API 명세 추가)
+[PaySystem API 명세서](https://documenter.getpostman.com/view/19722199/2sAY55ad9r)
+(API 명세 수정 필요)
 
 
 ## 🛠기술스택
@@ -49,7 +50,7 @@ docker-compose up -d
 2. MSA 아키텍처
     -  부하 분산 및 장애 복구 기능을 포함
 3. 모노레포 구성
-    -  여러 모듈을 통합하여 관리 효율성을 높이고, 서비스 간 통신을 통해 데이터 일관성을 유지
+    -  여러 모듈을 통합하여 배포 관리 효율성을 높이고, 서비스 간 통신을 통해 데이터 일관성을 유지
 
 ### 데이터 처리
 1. 대용량 배치 작업 및 파티셔닝
@@ -73,13 +74,17 @@ docker-compose up -d
 
 ## 🔥성능 최적화
 
-1. Batch 작업 : Reader 최적화와 스탭 파티셔닝 도입
+1. Batch 작업 : 
+   [Reader 최적화와 파티셔닝 도입](https://ranny-devlog.tistory.com/entry/%EC%84%B1%EB%8A%A5-%EC%B5%9C%EC%A0%81%ED%99%94-300%EB%A7%8C-%EA%B1%B4%EC%9D%98-%EB%B0%B0%EC%B9%98-%EC%9E%91%EC%97%85%EC%9D%84-%EC%84%B1%EB%8A%A5-%EA%B0%9C%EC%84%A0%ED%95%B4%EB%B3%B4%EC%9E%90-8235-%EA%B0%9C%EC%84%A0)
 
 | 단계 | 데이터 규모 | 처리시간 | 개선율 |
 | --- | --- | --- | --- |
 | 최적화 전 | 300만 건 | 90분 + | - |
 | 1차 최적화 | 300만 건 | 34분 6초 | 62.22% ↓ |
 | 2차 최적화 | 300만 건 | 6분 29초 | 82.35% ↓ |
+
+- 1차 최적화 : 데이터베이스 인덱싱, 쿼리 최적화, Reader 리팩토링 (API 페이징 적용, 특정 Reader JDBC 직접 사용)
+- 2차 최적화 : Spring Batch 파티셔닝 도입, Writer saveAll로 저장
 
 (구체적인 내용 링크 삽입)
 
