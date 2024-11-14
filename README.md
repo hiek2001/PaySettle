@@ -23,7 +23,7 @@ docker-compose up -d
 
 ## 🗂 ERD
 
-![title](https://file.notion.so/f/f/0a660537-6246-44fa-b89f-8d3674af3d87/f8a18d7c-d8e8-4c33-a05c-049b5c1076ca/image.png?table=block&id=129533b2-f0c0-8093-8cbd-caf6c54ca99f&spaceId=0a660537-6246-44fa-b89f-8d3674af3d87&expirationTimestamp=1731585600000&signature=IZ95Y4Z_9xvv2sLlbCn8V7MR_zJpBI-Zq4TuC3NgVAc&downloadName=image.png)
+![ex_screenshot](./image/ERD.png)
 
 ## 📚 API 명세서
 
