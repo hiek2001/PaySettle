@@ -86,7 +86,6 @@ docker-compose up -d
 - 2차 최적화 : Spring Batch 파티셔닝 도입, Writer saveAll로 저장
 
 
-
 2. 통계 조회 API : 다중 컬럼 인덱싱을 활용
     -  **조회 쿼리 속도 7798ms -> 1.474ms**
 
@@ -114,9 +113,11 @@ docker-compose up -d
 ### 기술적 의사결정
 
 - 레이어드 아키텍처 -> MSA(MicroService Architecture) 전환
+  
+(링크 추가 예정)
 
 ### 트러블 슈팅 경험
-- Redis에서 List<Dto> 역직렬화 오류 해결
+- [Redis에서 List\<Dto\> 역직렬화 문제 해결](https://ranny-devlog.tistory.com/entry/%ED%8A%B8%EB%9F%AC%EB%B8%94-%EC%8A%88%ED%8C%85-Redis%EC%97%90%EC%84%9C-ListDto-%EC%97%AD%EC%A7%81%EB%A0%AC%ED%99%94-%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0-%EA%B3%BC%EC%A0%95)
 
-(각 내용에 링크 추가 예정)
+
 
