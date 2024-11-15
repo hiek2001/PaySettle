@@ -1,9 +1,13 @@
 package com.project.revenueservice.dto;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
 
 @Getter
-public class RevenueInfoDto {
+@NoArgsConstructor
+@CacheConfig(cacheNames = "RevenueInfoDto")
+public class RevenueInfoDto{
     private Long videoId;
     private long amount;
 
@@ -15,4 +19,5 @@ public class RevenueInfoDto {
     public void updateAmount(long videoAmount, long adAmount) {
         this.amount = videoAmount + adAmount;
     }
+
 }
