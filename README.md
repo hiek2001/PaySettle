@@ -28,7 +28,6 @@ docker-compose up -d
 ## 📚 API 명세서
 
 [PaySystem API 명세서](https://documenter.getpostman.com/view/19722199/2sAY55ad9r)
-(API 명세 수정 필요)
 
 
 ## 🛠기술스택
