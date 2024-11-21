@@ -21,7 +21,6 @@ RUN chmod +x ./gradlew
 
 # common 모듈을 빌드 (테스트 제외)
 RUN ./gradlew :common:bootJar -x test --stacktrace
-#RUN gradle :common:build -x test --no-daemon
 # 빌드된 JAR 파일을 최종 이미지로 복사
 RUN cp common/build/libs/common-0.0.1-SNAPSHOT.jar /app/app.jar
 

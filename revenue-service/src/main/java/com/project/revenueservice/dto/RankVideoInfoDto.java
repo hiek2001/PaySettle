@@ -1,6 +1,5 @@
 package com.project.revenueservice.dto;
 
-import com.project.streamingservice.entity.Video;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -8,7 +7,6 @@ import lombok.Getter;
 public class RankVideoInfoDto {
     private int rank = 0;
     private Long videoId;
-   // private Video video;
     private long totalViews;
     private long totalWatchTime;
 

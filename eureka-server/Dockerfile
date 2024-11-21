@@ -22,7 +22,7 @@ RUN chmod +x ./gradlew
 
 # eureka-server 모듈을 빌드 (테스트 제외)
 RUN ./gradlew :eureka-server:bootJar -x test --stacktrace
-#RUN gradle :eureka-server:build -x test --no-daemon
+
 # 빌드된 JAR 파일을 최종 이미지로 복사
 RUN cp eureka-server/build/libs/eureka-server-0.0.1-SNAPSHOT.jar /app/app.jar
 

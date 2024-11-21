@@ -22,7 +22,7 @@ RUN chmod +x ./gradlew
 
 # gateway-service 모듈을 빌드 (테스트 제외)
 RUN ./gradlew :gateway-service:bootJar -x test --stacktrace
-#RUN gradle :gateway-service:build -x test --no-daemon
+
 # 빌드된 JAR 파일을 최종 이미지로 복사
 RUN cp gateway-service/build/libs/gateway-service-0.0.1-SNAPSHOT.jar /app/app.jar
 

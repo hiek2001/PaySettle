@@ -1,7 +1,6 @@
 package com.project.streamingservice.entity;
 
 import com.project.streamingservice.dto.VideoControlReqeustDto;
-import com.project.userservice.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,9 +17,6 @@ public class UserVideoHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name="user_id")
-//    private User user;
     private Long userId;
 
     @ManyToOne(fetch = FetchType.LAZY)

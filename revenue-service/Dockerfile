@@ -22,7 +22,7 @@ RUN chmod +x ./gradlew
 
 # revenue-service 모듈을 빌드 (테스트 제외)
 RUN ./gradlew :revenue-service:bootJar -x test --stacktrace
-#RUN gradle :revenue-service:build -x test --no-daemon
+
 # 빌드된 JAR 파일을 최종 이미지로 복사
 RUN cp revenue-service/build/libs/revenue-service-0.0.1-SNAPSHOT.jar /app/app.jar
 

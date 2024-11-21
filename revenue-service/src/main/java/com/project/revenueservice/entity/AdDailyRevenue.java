@@ -1,6 +1,5 @@
 package com.project.revenueservice.entity;
 
-import com.project.streamingservice.entity.Video;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
