@@ -15,7 +15,7 @@
 ## 💻 Docker-Compose 실행 명령어
 
 ```
-docker-compose up -d
+docker-compose up -d --build
 ```
 
 ## 🗂 ERD
