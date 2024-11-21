@@ -25,8 +25,8 @@ services:
 
   eureka-server:
     build:
-      context: ./eureka-server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: /eureka-server/Dockerfile
     container_name: eureka-server
     ports:
       - "8761:8761"
@@ -35,8 +35,8 @@ services:
 
   common-service:
     build:
-      context: ./common
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: /common/Dockerfile
     container_name: common-service
     ports:
       - "9001:9001"
@@ -55,8 +55,8 @@ services:
 
   user-service:
     build:
-      context: ./user-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: /user-service/Dockerfile
     container_name: user-service
     ports:
       - "9002:9002"
@@ -76,8 +76,8 @@ services:
 
   streaming-service:
     build:
-      context: ./streaming-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: /streaming-service/Dockerfile
     container_name: streaming-service
     ports:
       - "9003:9003"
@@ -96,8 +96,8 @@ services:
 
   revenue-service:
     build:
-      context: ./revenue-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: /revenue-service/Dockerfile
     container_name: revenue-service
     ports:
       - "9004:9004"
@@ -119,8 +119,8 @@ services:
 
   gateway-service:
     build:
-      context: ./gateway-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: /gateway-service/Dockerfile
     container_name: gateway-service
     ports:
       - "8000:8000"
