@@ -40,8 +40,6 @@ public class ChunkExecutionTimeListener implements StepExecutionListener, ItemRe
         log.info("Step {} 종료 시간 : {} " ,stepExecution.getStepName(), stepEndTime);
         log.info("========= Step execution completed =========");
         log.info("총 count : {} 개", stepExecution.getReadCount());
-        log.info("Reader 총 소요 시간: {} ms", totalReadTime);
-        log.info("Processor 총 소요 시간: {} ms", totalProcessTime);
         log.info("Step {} 총 처리 시간 : {} sec",stepExecution.getStepName(),duration.toSeconds());
 
         return stepExecution.getExitStatus();
@@ -96,10 +94,6 @@ public class ChunkExecutionTimeListener implements StepExecutionListener, ItemRe
         // 각 chunk의 누적 시간을 전체 Reader, Processor 소요 시간에 추가
         totalReadTime += chunkReadTime;
         totalProcessTime += chunkProcessTime;
-
-        log.info("Chunk 소요 시간: {} ms", chunkDuration.toMillis());
-        log.info("Chunk 내 Reader 소요 시간: {} ms", chunkReadTime);
-        log.info("Chunk 내 Processor 소요 시간: {} ms", chunkProcessTime);
     }
 
 }

@@ -24,8 +24,7 @@ public class StatsTestSchedule {
     }
 
     // 매주 일요일
-   // @Scheduled(cron = "0 59 23 7 * *", zone = "Asia/Seoul")
-    @Scheduled(cron = "0 34 12 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 59 23 7 * *", zone = "Asia/Seoul")
     public void videoDailyStatsJob() throws Exception {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");

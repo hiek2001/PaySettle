@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 
-@Slf4j()
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users")
@@ -29,7 +29,7 @@ public class UserController {
     @Value("${kakao.api.redirect-uri}")
     private String kakaoRedirectUri;
 
-    @Value("${kakao_api_client_id}")
+    @Value("${kakao.api.client-id}")
     private String kakaoClientId;
 
     @Value("${url.base}")
