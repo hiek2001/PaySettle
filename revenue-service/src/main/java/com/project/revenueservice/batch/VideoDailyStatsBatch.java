@@ -101,7 +101,6 @@ public class VideoDailyStatsBatch {
     public Step viewsStepManager() throws Exception {
         return new StepBuilder("viewsStep.manager", jobRepository)
                 .partitioner(BatchConstants.VIDEO_DAILY_STATS+"Step", partitioner())
-                .step(videoDailyStatsStep())
                 .partitionHandler(partitionHandler())
                 .build();
     }
@@ -161,7 +160,6 @@ public class VideoDailyStatsBatch {
         // String을 Date로 변환
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(1);
-        //LocalDate parsedDate = LocalDate.parse(currentDate.substring(0, 10), formatter).minusDays(6); // test : 2024-11-05
 
         Map<String, Object> params = new HashMap<>();
         params.put("createdAt", parsedDate);
