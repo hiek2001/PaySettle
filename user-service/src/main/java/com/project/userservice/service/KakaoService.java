@@ -36,7 +36,7 @@ public class KakaoService {
     private final UserRepository userRepository;
     private final SocialUserRepository socialUserRepository;
 
-    @Value("${kakao_api_client_id}")
+    @Value("${kakao.api.client-id}")
     private String clientId;
 
     @Value("${kakao.api.redirect-uri}")

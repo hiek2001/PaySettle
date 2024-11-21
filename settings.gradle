@@ -1,4 +1,4 @@
-rootProject.name = 'paySystem'
+rootProject.name = 'pay-system'
 
 include 'common'
 include 'eureka-server'

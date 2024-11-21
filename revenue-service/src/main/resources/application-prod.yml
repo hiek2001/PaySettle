@@ -1,0 +1,92 @@
+server:
+  port: ${PORT:9004}
+
+spring:
+  application:
+    name: ${SPRING_APPLICATION_NAME:revenue-service}
+
+  datasource:
+    url: jdbc:mysql://mysql-db:3306/paysystem
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 100
+      connection-timeout: 30000
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      minimum-idle: 100
+
+  servlet:
+    multipart:
+      enabled: true
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+      jdbc:
+        batch_size: 50
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        show_sql: true
+        highlight_sql: true
+
+  main:
+    allow-bean-definition-overriding: true
+
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: never
+    chunksize: 5000
+    partition:
+      poolsize: 5
+
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+  cache:
+    type: redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+url:
+  base: http://localhost:${server.port}
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://eureka-server:8761/eureka/}
+
+  instance:
+    lease-renewal-interval-in-seconds: ${EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS:10}
+    lease-expiration-duration-in-seconds: ${EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS:30}
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS:true}
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    non-secure-port-enabled: true
+    metadata-map:
+      instanceId: ${spring.application.name}:${random.value}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  metrics:
+    enable:
+      hikari: true
+      batch: true
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+

@@ -1,32 +1,7 @@
 services:
-  myapp:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    restart: on-failure
-    environment:
-      #- SPRING_PROFILES_ACTIVE=dev
-      - JWT_SECRET_KEY=${jwt_secret_key}
-      - KAKAO_CLIENT_ID=${kakao_api_client_id}
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/paysystem
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=1234
-    ports:
-      - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./build/libs:/app  # 빌드된 JAR 파일을 마운트
-    networks:
-      - pay-system_my_network
-    dns:
-      - 8.8.8.8  # Kakao API 접근 허용
-      - 8.8.4.4
-
-  db:
-    container_name: mysql-paysystem
-    image: mysql/mysql-server:latest
+  mysql:
+    container_name: mysql-db
+    image: mysql:8.0
     restart: always
     environment:
      - MYSQL_DATABASE=paysystem
@@ -35,13 +10,128 @@ services:
      - TZ=Asia/Seoul
     ports:
       - "3307:3306"
-    healthcheck:
-      test: [ "CMD-SHELL", "mysqladmin ping -h mysql-paysystem -p1234 || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    volumes:
+      - mysql-data:/var/lib/mysql
     networks:
       - pay-system_my_network
+
+  redis:
+    image: redis:latest
+    container_name: redis-paysystem
+    ports:
+      - "6380:6379"
+    networks:
+      - pay-system_my_network
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - pay-system_my_network
+
+  common-service:
+    build:
+      context: ./common
+      dockerfile: Dockerfile
+    container_name: common-service
+    ports:
+      - "9001:9001"
+    depends_on:
+      - mysql
+      - eureka-server
+      - gateway-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/paysystem
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=1234
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - pay-system_my_network
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "9002:9002"
+    depends_on:
+      - mysql
+      - eureka-server
+      - gateway-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/paysystem
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=1234
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_PROFILES_ACTIVE=prod
+      #- REDIRECT_URI=https://061b-222-110-244-103.ngrok-free.app/api/users/login/kakao/redirect
+    networks:
+      - pay-system_my_network
+
+  streaming-service:
+    build:
+      context: ./streaming-service
+      dockerfile: Dockerfile
+    container_name: streaming-service
+    ports:
+      - "9003:9003"
+    depends_on:
+      - mysql
+      - eureka-server
+      - gateway-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/paysystem
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=1234
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - pay-system_my_network
+
+  revenue-service:
+    build:
+      context: ./revenue-service
+      dockerfile: Dockerfile
+    container_name: revenue-service
+    ports:
+      - "9004:9004"
+    depends_on:
+      - mysql
+      - redis
+      - eureka-server
+      - gateway-service
+    environment:
+      - SPRING_REDIS_HOST=redis-paysystem
+      - SPRING_REDIS_PORT=6379
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/paysystem
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=1234
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - pay-system_my_network
+
+  gateway-service:
+    build:
+      context: ./gateway-service
+      dockerfile: Dockerfile
+    container_name: gateway-service
+    ports:
+      - "8000:8000"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - pay-system_my_network
+
+volumes:
+  mysql-data:
 
 networks:
   pay-system_my_network:

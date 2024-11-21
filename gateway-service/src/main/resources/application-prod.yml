@@ -1,0 +1,57 @@
+server:
+  port: 8000
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://eureka-server:8761/eureka/}
+
+spring:
+  application:
+    name: gateway-service
+
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/user-service/**
+          filters:
+            - StripPrefix=1
+            - name: JwtFilter
+        - id: streaming-service
+          uri: lb://streaming-service
+          predicates:
+            - Path=/streaming-service/**
+          filters:
+            - StripPrefix=1
+            - name: JwtFilter
+        - id: revenue-service
+          uri: lb://revenue-service
+          predicates:
+            - Path=/revenue-service/**
+          filters:
+            - StripPrefix=1
+            - name: JwtFilter
+management:
+  endpoint:
+    gateway:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+      endpoint:
+        prometheus:
+          enabled: true
+      prometheus:
+        metrics:
+          export:
+            enabled: true
+
+jwt:
+  secret:
+    key: 7Iqk7YyM66W07YOA7L2U65Sp7YG065+9U3ByaW5n6rCV7J2Y7Yqc7YSw7LWc7JuQ67mI7J6F64uI64ukLg==
