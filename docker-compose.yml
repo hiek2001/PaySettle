@@ -14,6 +14,11 @@ services:
       - mysql-data:/var/lib/mysql
     networks:
       - pay-system_my_network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p1234" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:latest
@@ -50,6 +55,8 @@ services:
       - SPRING_DATASOURCE_PASSWORD=1234
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      - service-data:/data
     networks:
       - pay-system_my_network
 
@@ -70,7 +77,8 @@ services:
       - SPRING_DATASOURCE_PASSWORD=1234
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_PROFILES_ACTIVE=prod
-      #- REDIRECT_URI=https://061b-222-110-244-103.ngrok-free.app/api/users/login/kakao/redirect
+    volumes:
+      - service-data:/data
     networks:
       - pay-system_my_network
 
@@ -91,6 +99,8 @@ services:
       - SPRING_DATASOURCE_PASSWORD=1234
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      - service-data:/data
     networks:
       - pay-system_my_network
 
@@ -114,6 +124,10 @@ services:
       - SPRING_DATASOURCE_PASSWORD=1234
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_SQL_INIT_MODE=always # 처음 빌드할 때만 사용할 것. 이후에는 주석처리 필수
+      - SPRING_BATCH_JDBC_INITIALIZE-SCHEMA=always # 처음 빌드할 때만 사용할 것. 이후에는 주석처리 필수
+    volumes:
+      - service-data:/data
     networks:
       - pay-system_my_network
 
@@ -132,6 +146,7 @@ services:
 
 volumes:
   mysql-data:
+  service-data:
 
 networks:
   pay-system_my_network:
