@@ -16,7 +16,7 @@ public class Ad {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long adId; // 동영상에 삽입된 광고 ID
+    private Long adId; // 광고 ID
 
     private String adUrl; // 광고 URL
 }
